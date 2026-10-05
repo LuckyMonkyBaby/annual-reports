@@ -9,7 +9,16 @@ export function similarReports(reports, selected, limit = 4) {
 }
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
-  let reports = [];
+  let reports = [], filtered = [], shown = 0;
+  const sentinel = document.createElement('div');
+  sentinel.setAttribute('aria-hidden', 'true');
+  $('gallery').after(sentinel);
+  const observer = new IntersectionObserver(entries => { if (entries[0].isIntersecting) append(); }, {rootMargin: '600px'});
+  function append() {
+    $('gallery').append(...filtered.slice(shown, shown + 48).map(makeCard));
+    shown += 48;
+    if (shown >= filtered.length) observer.unobserve(sentinel);
+  }
   const name = s => s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
   function openReport(r) {
     $('detail-cover').src = r.cover;
@@ -41,9 +50,13 @@ if (typeof document !== 'undefined') {
     return card;
   }
   function render() {
-    const filtered = selectReports(reports, $('search').value);
+    filtered = selectReports(reports, $('search').value);
+    shown = 0;
+    observer.unobserve(sentinel);
     $('empty').hidden = filtered.length > 0;
-    $('gallery').replaceChildren(...filtered.map(makeCard));
+    $('gallery').replaceChildren();
+    append();
+    if (shown < filtered.length) observer.observe(sentinel);
   }
   $('search').addEventListener('input', render);
   $('empty-reset').addEventListener('click', () => { $('search').value = ''; render(); });
