@@ -10,10 +10,19 @@ export function similarReports(reports, selected, limit = 4) {
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   let reports = [], filtered = [], shown = 0;
+  const preloader = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      preloader.unobserve(entry.target);
+      const image = entry.target.querySelector('img');
+      image.loading = 'eager';
+      image.decode().catch(() => {});
+    }
+  }, {rootMargin: '800px 0px'});
   const sentinel = document.createElement('div');
   sentinel.setAttribute('aria-hidden', 'true');
   $('gallery').after(sentinel);
-  const observer = new IntersectionObserver(entries => { if (entries[0].isIntersecting) append(); }, {rootMargin: '600px'});
+  const observer = new IntersectionObserver(entries => { if (entries[0].isIntersecting) append(); }, {rootMargin: '1200px'});
   function append() {
     $('gallery').append(...filtered.slice(shown, shown + 48).map(makeCard));
     shown += 48;
@@ -25,6 +34,7 @@ if (typeof document !== 'undefined') {
     $('detail-cover').alt = `${r.company} ${r.year} annual report cover`;
     $('detail-company').textContent = `${name(r.company)} · ${r.year}`;
     $('pdf-link').href = r.pdf;
+    for (const card of $('similar').children) preloader.unobserve(card);
     $('similar').replaceChildren(...similarReports(reports, r).map(makeCard));
     if (!$('detail').open) $('detail').showModal();
   }
@@ -48,12 +58,14 @@ if (typeof document !== 'undefined') {
     caption.append(company, year);
     card.append(stage, caption);
     card.addEventListener('click', () => openReport(r));
+    preloader.observe(card);
     return card;
   }
   function render() {
     filtered = selectReports(reports, $('search').value);
     shown = 0;
     observer.unobserve(sentinel);
+    preloader.disconnect();
     $('empty').hidden = filtered.length > 0;
     $('gallery').replaceChildren();
     append();
@@ -68,7 +80,13 @@ if (typeof document !== 'undefined') {
     if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) $('detail').close();
   });
   document.addEventListener('keydown', e => {
-    if (e.key === '/' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName) && !$('detail').open) {
+    const find = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !e.altKey;
+    if (find) {
+      e.preventDefault();
+      if ($('detail').open) $('detail').close();
+      $('search').focus();
+      $('search').select();
+    } else if (e.key === '/' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName) && !$('detail').open) {
       e.preventDefault(); $('search').focus();
     }
   });
