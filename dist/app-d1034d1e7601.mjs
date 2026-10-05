@@ -232,7 +232,7 @@ if (typeof document !== 'undefined') {
       const shape = foldPaper(box.width, box.height, progress);
       cover.style.clipPath = shape.front.length ? `polygon(${shape.front.map(p => `${p[0]}px ${p[1]}px`).join(',')})` : 'inset(0 100% 0 0)';
       back.setAttribute('points', shape.back.map(p => p.join(',')).join(' '));
-      back.style.filter = `drop-shadow(${-3 - 5 * Math.sin(Math.PI * progress)}px ${3 + 7 * Math.sin(Math.PI * progress)}px ${3 + 13 * Math.sin(Math.PI * progress)}px #0004)`;
+      back.style.filter = `drop-shadow(${-3 - 5 * Math.sin(Math.PI * progress)}px ${3 + 7 * Math.sin(Math.PI * progress)}px ${3 + 13 * Math.sin(Math.PI * progress)}px #0002)`;
       crease.setAttribute('points', shape.crease.map(p => p.join(',')).join(' '));
       if (shape.crease.length === 2) {
         gradient.setAttribute('gradientUnits','userSpaceOnUse');
