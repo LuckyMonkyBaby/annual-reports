@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync,existsSync} from 'node:fs';
 import {selectReports,similarReports} from '../dist/app.mjs';
 const data=JSON.parse(readFileSync(new URL('../dist/reports.json',import.meta.url)));
@@ -16,3 +17,12 @@ const samples=[selected,{id:'near-blue',color:[25,90,185]},{id:'red',color:[190,
 assert.equal(similarReports(samples,selected)[0].id,'near-blue');
 assert.ok(similarReports(data.reports,data.reports[0]).every(r=>r.id!==data.reports[0].id));
 console.log(`PASS: ${data.reports.length} unique records, sources, WebP assets, fiscal years, S&P membership, ticker search and color ranking`);
+
+const catalog=JSON.parse(readFileSync(new URL('../dist/catalog.json',import.meta.url))).reports;
+assert.deepEqual(catalog.map(r=>r.id),data.reports.map(r=>r.id));
+for(const r of catalog){assert.ok(r.width>0&&r.height>0);const source=data.reports.find(s=>s.id===r.id);assert.equal(r.pdf,source.pdf);assert.equal(r.cover,source.cover);assert.deepEqual(r.color,source.color)}
+console.log('PASS: compact catalog matches the reviewed archive and contains intrinsic image sizes');
+
+const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
+for(const source of ['app.mjs','style.css']){const [stem,ext]=source.split('.');const bytes=readFileSync(new URL('../dist/'+source,import.meta.url));const name=`${stem}-${createHash('sha256').update(bytes).digest('hex').slice(0,12)}.${ext}`;assert.ok(html.includes(name));assert.deepEqual(readFileSync(new URL('../dist/'+name,import.meta.url)),bytes)}
+console.log('PASS: immutable app/style hashes match source and HTML references');

@@ -10,15 +10,27 @@ export function similarReports(reports, selected, limit = 12) {
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   const isFeatured = new URLSearchParams(location.search).get('view') !== 'all';
+  const introduce = document.documentElement.dataset.view === 'landing';
   let reports = [], filtered = [], shown = 0, selected = null, transition;
   const coverRatios = new Map();
   let reusableCards = new Map();
+  let catalogPromise;
+  function loadCatalog() {
+    return catalogPromise ||= fetch('catalog.json', {priority:'low'}).then(r => {
+      if (!r.ok) throw Error('Collection unavailable');
+      return r.json();
+    }).then(data => { reports = data.reports; render(); });
+  }
   function alignToolbar() {
     if (document.activeElement === $('search')) return;
-    const cards = [...$('gallery').children];
+    const cards = $('gallery').children;
     if (!cards.length) return;
     const top = cards[0].getBoundingClientRect().top;
-    const row = cards.filter(card => Math.abs(card.getBoundingClientRect().top - top) < 2);
+    const row = [];
+    for (const card of cards) {
+      if (Math.abs(card.getBoundingClientRect().top - top) >= 2) break;
+      row.push(card);
+    }
     const bounds = row.map(card => { const img = card.querySelector('img'); return (img.naturalWidth ? img : card.querySelector('.card-caption')).getBoundingClientRect(); });
     const header = document.querySelector('header');
     const nav = document.querySelector('.site-nav');
@@ -56,33 +68,42 @@ if (typeof document !== 'undefined') {
     const update = () => { render(); window.scrollTo({top: 0, behavior: 'instant'}); };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       transition?.skipTransition();
-      transition = document.startViewTransition(async () => {
+      const opening = selected && `cover-${selected.id}`;
+      transition = document.startViewTransition(() => {
         update();
-        await Promise.all([...$('gallery').querySelectorAll('img')].filter(img => img.closest('.card').getBoundingClientRect().top < innerHeight + 200).map(img => {
-          img.loading = 'eager';
-          return img.decode().catch(() => {});
-        }));
-        alignToolbar();
       });
-      transition.ready.catch(() => {});
+      transition.ready.then(() => {
+        if (!opening) return;
+        document.documentElement.animate([
+          {transform:'perspective(1200px) rotateY(0deg)',filter:'drop-shadow(0 0 0 transparent)',offset:0},
+          {transform:'perspective(1200px) rotateY(-12deg)',filter:'drop-shadow(8px 6px 12px #0002)',offset:.32},
+          {transform:'perspective(1200px) rotateY(1deg)',filter:'drop-shadow(2px 2px 3px #0001)',offset:.8},
+          {transform:'perspective(1200px) rotateY(0deg)',filter:'drop-shadow(0 0 0 transparent)',offset:1}
+        ].map(frame => ({...frame,transformOrigin:'left center'})), {
+          duration:300,easing:'cubic-bezier(.22,1,.36,1)',pseudoElement:`::view-transition-image-pair(${CSS.escape(opening)})`
+        });
+      }).catch(() => {});
     } else update();
   }
   function makeCard(r, isSelected = false) {
     const existing = reusableCards.get(r.id);
-    if (!isSelected && existing?.tagName === 'BUTTON') { preloader.observe(existing); return existing; }
+    if (existing?.tagName === (isSelected ? 'ARTICLE' : 'BUTTON')) { preloader.observe(existing); return existing; }
     const card = document.createElement(isSelected ? 'article' : 'button');
     card.className = isSelected ? 'card selected-card' : 'card';
     card.dataset.reportId = r.id;
-    if (coverRatios.has(r.id)) card.style.setProperty('--cover-ratio', coverRatios.get(r.id));
+    card.style.setProperty('--cover-ratio', r.width / r.height || coverRatios.get(r.id) || .67);
     card.setAttribute('aria-label', isSelected ? `Show all reports; selected ${r.company} ${r.year}` : `Show colors similar to ${r.company} ${r.year}`);
     if (!isSelected) card.setAttribute('aria-pressed', 'false');
     const stage = document.createElement('div');
     stage.className = 'cover-stage';
-    const img = document.createElement('img');
-    img.style.viewTransitionName = `cover-${r.id}`;
-    img.addEventListener('load', () => { const ratio = img.naturalWidth / img.naturalHeight; coverRatios.set(r.id, ratio); card.style.setProperty('--cover-ratio', ratio); alignToolbar(); });
-    img.src = r.cover; img.alt = `${r.company} ${r.year} cover`;
-    img.loading = 'lazy'; img.decoding = 'async';
+    const img = existing?.querySelector('img') || document.createElement('img');
+    img.style.viewTransitionName = img.complete && img.naturalWidth ? `cover-${r.id}` : 'none';
+    img.onload = () => { const ratio = img.naturalWidth / img.naturalHeight; coverRatios.set(r.id, ratio); card.style.setProperty('--cover-ratio', ratio); img.style.viewTransitionName = `cover-${r.id}`; alignToolbar(); };
+    img.width = r.width; img.height = r.height;
+    if (img.getAttribute('src') !== r.cover) img.src = r.cover;
+    img.alt = `${r.company} ${r.year} cover`;
+    img.loading = isSelected ? 'eager' : 'lazy'; img.decoding = 'async';
+    img.fetchPriority = isSelected ? 'high' : 'auto';
     stage.append(img);
     const caption = document.createElement('div');
     caption.className = 'card-caption';
@@ -142,14 +163,21 @@ if (typeof document !== 'undefined') {
       e.preventDefault(); $('search').focus();
     }
   });
-  fetch('reports.json').then(r => {
-    if (!r.ok) throw Error('Collection unavailable');
-    return r.json();
-  }).then(data => {
-    reports = data.reports;
-    if (isFeatured) selected = reports.find(r => r.cik === '886982' && r.year === 2024) || reports[0];
-    render();
-  }).catch(() => {
-    $('gallery').textContent = 'The collection could not load. Please reload to try again.';
-  });
+  const initial = JSON.parse($('initial-reports').textContent);
+  reports = isFeatured ? initial.featured : initial.initial;
+  if (isFeatured) selected = reports[0];
+  render();
+  const fillCatalog = () => loadCatalog().catch(() => { $('gallery').append('The full collection could not load. Reload to retry.'); });
+  function scheduleCatalog() {
+    if ('requestIdleCallback' in window) requestIdleCallback(fillCatalog, {timeout:1000});
+    else setTimeout(fillCatalog, 100);
+  }
+  if (introduce) {
+    const reveal = () => { document.documentElement.dataset.view = 'featured'; render(); scheduleCatalog(); };
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) reveal();
+    else Promise.race([
+      $('gallery').querySelector('img').decode().catch(() => {}),
+      new Promise(resolve => setTimeout(resolve, 180))
+    ]).then(() => document.startViewTransition(reveal).ready.catch(() => {}));
+  } else scheduleCatalog();
 }

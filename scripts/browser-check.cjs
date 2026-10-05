@@ -9,15 +9,15 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
   const start=document.startViewTransition?.bind(document);
   if(!start)return;
   document.startViewTransition=update=>{
-   const transition=start(update);
-   transition.ready.then(()=>{
+   const at=performance.now(),transition=start(update);
+   transition.ready.then(()=>requestAnimationFrame(()=>{
     const images=[...document.querySelectorAll('#gallery img')].filter(i=>i.closest('.card').getBoundingClientRect().top<innerHeight+200);
-    window.transitionEvidence={decoded:images.every(i=>i.complete&&i.naturalWidth>0),undistorted:images.every(i=>{const b=i.getBoundingClientRect();return Math.abs(b.width/b.height-i.naturalWidth/i.naturalHeight)<.01}),durations:document.getAnimations().filter(a=>a.effect?.pseudoElement?.startsWith('::view-transition-group(')).map(a=>a.effect.getTiming().duration)};
-   }).catch(()=>{});
+    window.transitionEvidence={readyMs:performance.now()-at,decoded:!!document.querySelector('.selected-card img')?.naturalWidth,undistorted:images.filter(i=>i.complete&&i.naturalWidth).every(i=>{const b=i.getBoundingClientRect();return Math.abs(b.width/b.height-i.naturalWidth/i.naturalHeight)<.01}),durations:document.getAnimations().filter(a=>a.effect?.pseudoElement?.startsWith('::view-transition-group(')).map(a=>a.effect.getTiming().duration),hinged:document.getAnimations().some(a=>a.effect?.pseudoElement?.startsWith('::view-transition-image-pair(')&&a.effect.getKeyframes().some(f=>f.transform?.includes('rotateY(-12deg)')))};
+   })).catch(()=>{});
    return transition;
   };
  });
- await page.goto(baseURL);await page.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);await page.waitForTimeout(800);
+ await page.goto(baseURL);await page.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0&&document.documentElement.dataset.view==='featured');await page.waitForTimeout(800);
  await page.locator('footer').scrollIntoViewIfNeeded();await page.waitForTimeout(700);
  await page.locator('.site-nav a').last().click();await page.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>=48);
  assert.equal(await page.locator('dialog').count(),0);
@@ -37,11 +37,12 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  await page.locator('#search').fill('ALTRIA');await page.waitForTimeout(700);assert.ok(await page.locator('#gallery .card').count()>=1);
  assert.ok(await page.locator('#clear-search').evaluate(e=>document.querySelector('#search').getBoundingClientRect().left-e.getBoundingClientRect().right>=10));
  await page.keyboard.press('Meta+f');assert.equal(await page.locator('#search').evaluate(e=>e.selectionStart===0&&e.selectionEnd===e.value.length),true);
+ await page.route('**/covers/**',async route=>{await new Promise(resolve=>setTimeout(resolve,1200));await route.continue().catch(()=>{})});
  await page.locator('#gallery .card').first().click();await page.waitForFunction(()=>document.querySelector('.selected-card'));await page.waitForTimeout(500);
  assert.equal(await page.locator('#gallery .card').count(),13);
  await page.waitForFunction(()=>window.transitionEvidence?.decoded);
  const motion=await page.evaluate(()=>window.transitionEvidence);
- assert.ok(motion.decoded&&motion.undistorted);assert.ok(motion.durations.length>0&&motion.durations.every(d=>d===420));
+ assert.ok(motion.decoded&&motion.undistorted&&motion.hinged);assert.ok(motion.readyMs<300,`Click snapshot waited ${motion.readyMs}ms for delayed images`);assert.ok(motion.durations.length>0&&motion.durations.every(d=>d===300));
  assert.equal(await page.locator('#pdf-link').isVisible(),true);
  assert.ok(['www.sec.gov','www.annualreports.com'].includes(new URL(await page.locator('#pdf-link').getAttribute('href')).hostname));
  assert.equal(await page.locator('.selected-card').evaluate(e=>getComputedStyle(e).gridRowStart),'span 2');
@@ -63,6 +64,7 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('.selected-card'));assert.equal(await page.locator('#pdf-link').isVisible(),false);
  await page.locator('#search').fill('no-such-company');assert.equal(await page.locator('#empty').isVisible(),true);await page.locator('#empty-reset').click();await page.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>=48);
  await page.locator('#gallery .card').last().scrollIntoViewIfNeeded();await page.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>48);
+ await page.goto(new URL('?view=featured',baseURL).href);await page.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);await page.emulateMedia({colorScheme:'dark'});await page.waitForTimeout(700);await page.emulateMedia({colorScheme:'light'});await page.waitForTimeout(400);
  const video=page.video();await context.close();await video.saveAs('/private/tmp/annual-report-atlas-demo/annual-report-atlas.webm');
  for(const width of [390,320]){
   const mobile=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'}),m=await mobile.newPage();await m.goto(new URL('?view=all',baseURL).href);await m.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>=48);
@@ -72,9 +74,9 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
   await m.waitForFunction(()=>document.querySelector('.selected-card img').naturalWidth>0);
   assert.ok(await m.locator('.selected-card img').evaluate(e=>e.getBoundingClientRect().top<innerHeight/4));
   await m.screenshot({path:`/private/tmp/annual-report-atlas-demo/selected-mobile-${width}.png`});await m.locator('#reset').click();await m.waitForFunction(()=>!document.querySelector('.selected-card'));
-  await m.goto(baseURL);await m.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await m.locator('footer').scrollIntoViewIfNeeded();assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await mobile.close();
+  await m.goto(baseURL);await m.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0&&document.documentElement.dataset.view==='featured');assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await m.locator('footer').scrollIntoViewIfNeeded();assert.ok(await m.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await mobile.close();
  }
- const home=await browser.newPage({viewport:{width:1440,height:1000}});await home.goto(baseURL);await home.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);
+ const home=await browser.newPage({viewport:{width:1440,height:1000}});await home.goto(new URL('?view=featured',baseURL).href);await home.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);
  assert.equal(await home.locator('#gallery .card').count(),13);assert.ok(await home.locator('.selected-card').getAttribute('aria-label').then(t=>t.includes('GOLDMAN')));assert.equal(await home.locator('.site-nav').isVisible(),true);
  assert.equal(await home.locator('#pdf-link').isVisible(),true);assert.equal(await home.locator('#reset').isVisible(),false);assert.equal(await home.locator('#pdf-link').innerText(),'Open full report PDF');assert.ok(await home.locator('#search').evaluate(e=>Math.abs(e.getBoundingClientRect().right-document.querySelector('.site-nav>a:last-child').getBoundingClientRect().right)<2));
  assert.equal(await home.locator('footer a').count(),1);assert.equal(await home.locator('#reset svg.lucide-x').count(),1);assert.equal(await home.locator('#clear-search svg.lucide-x').count(),1);
@@ -83,5 +85,8 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  await home.screenshot({path:'/private/tmp/annual-report-atlas-demo/featured-home.png'});
  await home.locator('footer').scrollIntoViewIfNeeded();await home.screenshot({path:'/private/tmp/annual-report-atlas-demo/footer.png'});
  await home.locator('.site-nav a').last().click();await home.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>=48);assert.equal(await home.locator('.selected-card').count(),0);await home.close();
- await browser.close();assert.deepEqual(errors,[]);console.log('PASS: desktop inline selection spans 2 columns/2 rows; mobile 390/320px full-width selection; PDF toolbar, animated filtering, related selection, Ctrl/Cmd-F, reset/Escape, preload, pagination, no overflow or errors; demo saved');
+ const dark=await browser.newContext({viewport:{width:1440,height:1000},colorScheme:'dark'}),d=await dark.newPage();await d.goto(baseURL);assert.equal(await d.locator('html').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(17, 17, 17)');await d.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0&&document.documentElement.dataset.view==='featured');await d.waitForTimeout(350);assert.equal(await d.locator('#search').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(17, 17, 17)');assert.equal(await d.locator('.selected-card img').evaluate(e=>getComputedStyle(e).filter),'none');await d.screenshot({path:'/private/tmp/annual-report-atlas-demo/featured-dark.png'});await d.emulateMedia({colorScheme:'light'});assert.equal(await d.locator('html').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');await dark.close();
+ const mobileDemo=await browser.newContext({viewport:{width:390,height:844},recordVideo:{dir:'/private/tmp/annual-report-atlas-demo/mobile',size:{width:390,height:844}}}),phone=await mobileDemo.newPage();await phone.goto(baseURL);await phone.waitForFunction(()=>document.documentElement.dataset.view==='featured'&&document.querySelector('.selected-card img')?.naturalWidth>0);await phone.waitForTimeout(600);await phone.locator('.card:not(.selected-card)').first().click();await phone.waitForTimeout(600);await phone.emulateMedia({colorScheme:'dark'});await phone.waitForTimeout(600);const phoneVideo=phone.video();await mobileDemo.close();await phoneVideo.saveAs('/private/tmp/annual-report-atlas-demo/mobile.webm');
+ for(const width of [1440,390]){const covers=await browser.newContext({viewport:{width,height:1000},javaScriptEnabled:false}),c=await covers.newPage();await c.goto(baseURL);await c.locator('.entry-cover').waitFor({state:'visible'});assert.ok(await c.locator('.entry-cover').evaluate(e=>{const b=e.getBoundingClientRect();return Math.abs(b.width/b.height-(innerWidth>760?16/9:.75))<.01}));await c.screenshot({path:`/private/tmp/annual-report-atlas-demo/brand-cover-${width}.png`});await covers.close()}
+ await browser.close();assert.deepEqual(errors,[]);console.log('PASS: desktop inline selection spans 2 columns/2 rows; mobile 390/320px full-width selection; PDF toolbar, animated filtering, related selection, Ctrl/Cmd-F, reset/Escape, preload, pagination, no overflow or errors; 300ms book/sheet motion starts under 300ms with 1.2s delayed images; automatic responsive intro and system dark/light mode pass; demo saved');
 })().catch(e=>{console.error(e);process.exit(1)});
