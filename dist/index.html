@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#ffffff"><meta name="description" content="Explore real first-page covers of recent shareholder annual reports from SEC EDGAR. Company search, report years and original PDF sources."><title>Annual Report Atlas — The recent archive</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%232d4236'/%3E%3Cpath d='M10 10h20v24H10z' fill='%23f5f3ed'/%3E%3Cpath d='M14 16h12M14 21h12M14 26h7' stroke='%232d4236' stroke-width='2'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"><script type="module" src="app.mjs"></script></head>
+<body>
+<header><label class="search"><input id="search" type="search" placeholder="Search" aria-label="Search company, ticker or year"></label></header>
+<main>
+<section id="gallery" class="gallery" aria-label="Annual report covers"></section>
+<div id="empty" class="empty" hidden><h2>No covers found.</h2><p>Try a different company or report year.</p><button id="empty-reset">Show the collection</button></div>
+</main>
+<dialog id="detail"><div class="detail-top"><button id="close" aria-label="Close report details">✕</button></div><div class="detail-body"><div class="detail-image"><img id="detail-cover" alt=""></div><div class="detail-info"><h2 id="detail-company"></h2><a class="pdf-button" id="pdf-link" target="_blank" rel="noopener">Open full report PDF ↗</a></div></div><section class="similar"><h3>Similar colors</h3><div id="similar" class="similar-grid"></div></section></dialog>
+</body></html>

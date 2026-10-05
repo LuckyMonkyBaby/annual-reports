@@ -1,0 +1,264 @@
+{
+  "updated": "2026-10-05T12:57:08.051772+00:00",
+  "source": "SEC EDGAR Form ARS",
+  "scope": "Selected designed first pages of US-incorporated corporate ARS filings from Q2 filing years [2025]; not a complete issuer census.",
+  "discoveredByFilingYear": {
+    "2025": 1923
+  },
+  "reports": [
+    {
+      "id": "1086222-0001193125-25-070456",
+      "company": "AKAMAI TECHNOLOGIES INC",
+      "cik": "1086222",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-01",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/1086222/000119312525070456/d846830dars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/1086222/000119312525070456/0001193125-25-070456-index.html",
+      "cover": "covers/1086222-0001193125-25-070456.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "AKAM"
+      ],
+      "color": [
+        64,
+        94,
+        99
+      ],
+      "chromaticFraction": 0.34625,
+      "yearBasis": "cover title"
+    },
+    {
+      "id": "1035443-0001035443-25-000105",
+      "company": "ALEXANDRIA REAL ESTATE EQUITIES, INC.",
+      "cik": "1035443",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-02",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/1035443/000103544325000105/are2024.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/1035443/000103544325000105/0001035443-25-000105-index.html",
+      "cover": "covers/1035443-0001035443-25-000105.jpg",
+      "form": "ARS",
+      "incorporation": "MD",
+      "tickers": [
+        "ARE"
+      ],
+      "color": [
+        66,
+        144,
+        197
+      ],
+      "chromaticFraction": 0.705,
+      "yearBasis": "cover title"
+    },
+    {
+      "id": "352541-0000352541-25-000038",
+      "company": "ALLIANT ENERGY CORP",
+      "cik": "352541",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-01",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/352541/000035254125000038/lnt2024ars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/352541/000035254125000038/0000352541-25-000038-index.html",
+      "cover": "covers/352541-0000352541-25-000038.jpg",
+      "form": "ARS",
+      "incorporation": "WI",
+      "tickers": [
+        "LNT"
+      ],
+      "color": [
+        129,
+        160,
+        190
+      ],
+      "chromaticFraction": 0.35875,
+      "yearBasis": "reporting period"
+    },
+    {
+      "id": "899051-0001308179-25-000458",
+      "company": "ALLSTATE CORP",
+      "cik": "899051",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-17",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/899051/000130817925000458/all4377871-ars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/899051/000130817925000458/0001308179-25-000458-index.html",
+      "cover": "covers/899051-0001308179-25-000458.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "ALL",
+        "ALL-PH",
+        "ALL-PB",
+        "ALL-PI",
+        "ALL-PJ"
+      ],
+      "color": [
+        22,
+        51,
+        85
+      ],
+      "chromaticFraction": 0.83875,
+      "yearBasis": "cover title"
+    },
+    {
+      "id": "764180-0000764180-25-000041",
+      "company": "ALTRIA GROUP, INC.",
+      "cik": "764180",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-03",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/764180/000076418025000041/annualreportaltriagroup24a.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/764180/000076418025000041/0000764180-25-000041-index.html",
+      "cover": "covers/764180-0000764180-25-000041.jpg",
+      "form": "ARS",
+      "incorporation": "VA",
+      "tickers": [
+        "MO"
+      ],
+      "color": [
+        4,
+        62,
+        82
+      ],
+      "chromaticFraction": 0.8325,
+      "yearBasis": "reporting period"
+    },
+    {
+      "id": "1018724-0001104659-25-033453",
+      "company": "AMAZON COM INC",
+      "cik": "1018724",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-10",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/1018724/000110465925033453/tm254123d4_ars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/1018724/000110465925033453/0001104659-25-033453-index.html",
+      "cover": "covers/1018724-0001104659-25-033453.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "AMZN"
+      ],
+      "color": [
+        176,
+        175,
+        175
+      ],
+      "chromaticFraction": 0.0,
+      "yearBasis": "reporting period"
+    },
+    {
+      "id": "5272-0000005272-25-000024",
+      "company": "AMERICAN INTERNATIONAL GROUP, INC.",
+      "cik": "5272",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-02",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/5272/000000527225000024/aigannualreport_2025.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/5272/000000527225000024/0000005272-25-000024-index.html",
+      "cover": "covers/5272-0000005272-25-000024.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "AIG"
+      ],
+      "color": [
+        25,
+        63,
+        136
+      ],
+      "chromaticFraction": 1.0,
+      "yearBasis": "cover title"
+    },
+    {
+      "id": "1053507-0001193125-25-070910",
+      "company": "AMERICAN TOWER CORP /MA/",
+      "cik": "1053507",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-02",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/1053507/000119312525070910/d922450dars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/1053507/000119312525070910/0001193125-25-070910-index.html",
+      "cover": "covers/1053507-0001193125-25-070910.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "AMT"
+      ],
+      "color": [
+        42,
+        71,
+        120
+      ],
+      "chromaticFraction": 0.99375,
+      "yearBasis": "cover title"
+    },
+    {
+      "id": "318154-0000950170-25-048897",
+      "company": "AMGEN INC",
+      "cik": "318154",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-02",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/318154/000095017025048897/amgn_ars_filing_2025.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/318154/000095017025048897/0000950170-25-048897-index.html",
+      "cover": "covers/318154-0000950170-25-048897.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "AMGN"
+      ],
+      "color": [
+        49,
+        151,
+        204
+      ],
+      "chromaticFraction": 0.7175,
+      "yearBasis": "reporting period"
+    },
+    {
+      "id": "1652044-0001308179-25-000513",
+      "company": "Alphabet Inc.",
+      "cik": "1652044",
+      "year": 2024,
+      "period": "2024-12-31",
+      "filed": "2025-04-25",
+      "pdf": "https://www.sec.gov/Archives/edgar/data/1652044/000130817925000513/goog012714-ars.pdf",
+      "filing": "https://www.sec.gov/Archives/edgar/data/1652044/000130817925000513/0001308179-25-000513-index.html",
+      "cover": "covers/1652044-0001308179-25-000513.jpg",
+      "form": "ARS",
+      "incorporation": "DE",
+      "tickers": [
+        "GOOGL",
+        "GOOG",
+        "GOOGM",
+        "GOOGN"
+      ],
+      "color": [
+        203,
+        24,
+        23
+      ],
+      "chromaticFraction": 0.41051136363636365,
+      "yearBasis": "cover title"
+    }
+  ],
+  "failures": [
+    {
+      "company": "ALIGN TECHNOLOGY INC",
+      "filed": "2025-04-08",
+      "error": "plain SEC form first page (image + heading check)"
+    },
+    {
+      "company": "Allegion plc",
+      "filed": "2025-04-18",
+      "error": "not US-incorporated: L2"
+    }
+  ],
+  "universe": {
+    "source": "https://www.ishares.com/us/products/239726/ishares-core-sp-500-etf/latest-holdings.csv",
+    "asOf": "Oct 02, 2026",
+    "method": "Equity holdings of IVV, an S&P 500 tracking ETF; membership proxy, not an official S&P constituent license."
+  }
+}
