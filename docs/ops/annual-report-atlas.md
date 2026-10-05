@@ -1,6 +1,6 @@
 # Annual Report Atlas
 
-The Site is a static white cover gallery: search company/ticker/year, click a cover, browse four nearest color matches, and open its original SEC PDF. No framework, runtime server, account database, or browser persistence is required. Public image assets and `reports.json` live in `dist`; Sites controls access to the hosted Site. `dist/app.mjs` owns browsing and matching; `scripts/import_reports.py` owns discovery, issuer checks, PDF validation and first-page extraction. `scripts/color.py` owns palette extraction. No scheduled importer is configured.
+The application is a static white cover gallery: search company/ticker/year, click a cover, browse four nearest color matches, and open its original SEC PDF. No framework, runtime server, account database, or browser persistence is required. Public image assets and `reports.json` live in `dist`; Vercel serves the static output. `dist/app.mjs` owns browsing and matching; `scripts/import_reports.py` owns discovery, issuer checks, PDF validation and first-page extraction. `scripts/color.py` owns palette extraction. No scheduled importer is configured.
 
 ## Source boundary
 
@@ -16,7 +16,7 @@ Nearest colors use squared RGB distance between dominant sampled colors, exclude
 
 ## Operate
 
-Requires Python 3, curl, and Poppler (`pdftoppm`, `pdftotext`). Set `SEC_USER_AGENT` to an identifiable application and contact email if changing the operator; current contact was supplied by the user. The importer is sequential, pauses between uncached requests, retries failures twice, and stays below SEC's documented 10 requests/second ceiling. PDFs and metadata are cached outside Git in the OS temporary directory. Re-running resumes downloaded reports; delete the holdings/SEC ticker cache files to refresh membership.
+Requires Python 3, curl, and Poppler (`pdftoppm`, `pdftotext`) and WebP (`cwebp`). Set `SEC_USER_AGENT` to an identifiable application and contact email if changing the operator; current contact was supplied by the user. The importer is sequential, pauses between uncached requests, retries failures twice, and stays below SEC's documented 10 requests/second ceiling. PDFs and metadata are cached outside Git in the OS temporary directory. Re-running resumes downloaded reports; delete the holdings/SEC ticker cache files to refresh membership.
 
 ```sh
 python3 scripts/import_reports.py --years 2025 --limit 10
@@ -30,4 +30,4 @@ The limit is successful designed covers per filing year. Each successful record 
 
 `node scripts/check.mjs` checks count, asset/source integrity, reporting dates, membership scope, ticker search and nearest-color behavior. `python3 scripts/check_import.py` checks the plain-form filter with colored and monochrome counterexamples. The browser check uses the parent workspace's installed Playwright, verifies image decoding, search/empty states, the PDF link, similar-cover navigation, Escape dismissal and mobile overflow, and records the actual UI outside Git. It requires the local server above. New checkouts need Playwright available to run that optional UI check; the product itself has no npm dependencies.
 
-The user requested work outside Lobby. The Site has an independent Git repository on main, separate from the parent coding application's integration checkout. Use Sites hosting to publish its exact source and static artifact. Keep full PDFs, demo videos and temporary caches outside Git.
+The user requested work outside Lobby. The application has an independent GitHub repository at luckymonkybaby/annual-reports on main, separate from the parent coding application's integration checkout. Vercel publishes `dist` with no installation or build step. Covers are precompressed WebP images served through the CDN with immutable cache headers; full PDFs remain in the temporary import cache. Keep full PDFs, demo videos and temporary caches outside Git.

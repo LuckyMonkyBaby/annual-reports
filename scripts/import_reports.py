@@ -39,7 +39,7 @@ def import_one(row):
     cik, company, form, filed, filename = row
     accession = Path(filename).stem
     key = f'{cik}-{accession}'
-    cover = ROOT / 'dist/covers' / f'{key}.jpg'
+    cover = ROOT / 'dist/covers' / f'{key}.webp'
     record = CACHE / f'{key}.json'
     entity = json.loads(get(f'https://data.sec.gov/submissions/CIK{int(cik):010d}.json', CACHE / f'entity-{cik}.json'))
     state = entity.get('stateOfIncorporation', '')
@@ -47,6 +47,7 @@ def import_one(row):
         raise ValueError(f'not US-incorporated: {state}')
     if record.exists() and cover.exists():
         result = json.loads(record.read_text())
+        result['cover'] = f'covers/{key}.webp'
         result['incorporation'] = state
         result['tickers'] = entity.get('tickers', [])
         return result
@@ -66,8 +67,9 @@ def import_one(row):
     if not data.startswith(b'%PDF-'):
         pdf.unlink(missing_ok=True)
         raise ValueError('attachment is not a PDF')
-    subprocess.run(['pdftoppm', '-f', '1', '-singlefile', '-scale-to', '900', '-jpeg', '-jpegopt', 'quality=85', str(pdf), str(cover.with_suffix(''))], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=90)
-    result = {'id': key, 'company': re.sub(r'\s*(/DE/|/MD/|/NY/|\\DE\\)$', '', company, flags=re.I).strip(), 'cik': cik, 'year': int(period[1][:4]), 'period': period[1], 'filed': filed, 'pdf': pdf_url, 'filing': index_url, 'cover': f'covers/{key}.jpg', 'form': form, 'incorporation': state, 'tickers': entity.get('tickers', [])}
+    subprocess.run(['pdftoppm', '-f', '1', '-singlefile', '-scale-to', '900', '-jpeg', '-jpegopt', 'quality=85', str(pdf), str(CACHE/key)], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=90)
+    subprocess.run(['cwebp', '-quiet', '-q', '76', str(CACHE/f'{key}.jpg'), '-o', str(cover)], check=True, timeout=30)
+    result = {'id': key, 'company': re.sub(r'\s*(/DE/|/MD/|/NY/|\\DE\\)$', '', company, flags=re.I).strip(), 'cik': cik, 'year': int(period[1][:4]), 'period': period[1], 'filed': filed, 'pdf': pdf_url, 'filing': index_url, 'cover': f'covers/{key}.webp', 'form': form, 'incorporation': state, 'tickers': entity.get('tickers', [])}
     record.write_text(json.dumps(result))
     return result
 
