@@ -7,6 +7,29 @@ export function similarReports(reports, selected, limit = 12) {
   return reports.filter(r => r.id !== selected.id && r.color)
     .sort((a, b) => distance(a) - distance(b) || a.id.localeCompare(b.id)).slice(0, limit);
 }
+export function foldPaper(width, height, progress) {
+  const p = Math.max(.0001, Math.min(1, progress));
+  const dx = 2.25 * width * p, dy = height * (.4 * Math.sin(Math.PI * p) + .08 * p);
+  const edge = dx * (width - dx / 2) - dy * dy / 2;
+  const score = ([x, y]) => dx * x - dy * y - edge;
+  const rectangle = [[0,0],[width,0],[width,height],[0,height]];
+  const clip = side => rectangle.flatMap((a, i) => {
+    const b = rectangle[(i + 1) % 4], sa = side * score(a), sb = side * score(b);
+    const points = sa >= 0 ? [a] : [];
+    if ((sa >= 0) !== (sb >= 0)) {
+      const t = sa / (sa - sb);
+      points.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+    }
+    return points;
+  });
+  const turned = clip(1);
+  const shape = {front:clip(-1), back:turned.map(point => {
+    const amount = 2 * score(point) / (dx * dx + dy * dy);
+    return [point[0] - amount * dx, point[1] + amount * dy];
+  }), crease:turned.filter(point => Math.abs(score(point)) < .001)};
+  for (const key of ['front','back','crease']) shape[key] = shape[key].map(([x,y]) => [x,height-y]);
+  return {...shape,normal:[dx,dy]};
+}
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   const isFeatured = new URLSearchParams(location.search).get('view') !== 'all';
@@ -172,12 +195,52 @@ if (typeof document !== 'undefined') {
     if ('requestIdleCallback' in window) requestIdleCallback(fillCatalog, {timeout:1000});
     else setTimeout(fillCatalog, 100);
   }
+  function openCover(reveal) {
+    const cover = document.querySelector('.entry-cover'), box = cover.getBoundingClientRect();
+    const overlay = document.createElement('div');
+    overlay.className = 'paper-opening'; overlay.setAttribute('aria-hidden', 'true');
+    Object.assign(overlay.style, {left:`${box.left}px`,top:`${box.top}px`,width:`${box.width}px`,height:`${box.height}px`});
+    Object.assign(cover.style, {display:'flex',width:'100%',height:'100%',aspectRatio:'auto',transform:'none',viewTransitionName:'none'});
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    svg.innerHTML = '<defs><linearGradient id="paper-back"><stop stop-color="var(--crease)"/><stop offset="1" stop-color="var(--paper)"/></linearGradient></defs><polygon class="paper-back" fill="url(#paper-back)"/><polyline class="paper-crease"/>';
+    overlay.append(cover, svg); document.body.append(overlay); reveal();
+    const back = svg.querySelector('polygon'), crease = svg.querySelector('polyline');
+    const gradient = svg.querySelector('linearGradient');
+    const duration = innerWidth > 760 ? 2000 : 1300, started = performance.now();
+    overlay.dataset.duration = duration;
+    const events = ['wheel','touchstart','pointerdown','keydown','resize'];
+    let frame, done = false;
+    const finish = () => {
+      if (done) return;
+      done = true; cancelAnimationFrame(frame); overlay.remove();
+      events.forEach(event => window.removeEventListener(event, finish));
+    };
+    events.forEach(event => window.addEventListener(event, finish, {passive:true}));
+    function turn(now) {
+      if (done) return;
+      const time = Math.min(1, (now - started) / duration), progress = .5 - .5 * Math.cos(Math.PI * time);
+      const shape = foldPaper(box.width, box.height, progress);
+      cover.style.clipPath = shape.front.length ? `polygon(${shape.front.map(p => `${p[0]}px ${p[1]}px`).join(',')})` : 'inset(0 100% 0 0)';
+      back.setAttribute('points', shape.back.map(p => p.join(',')).join(' '));
+      crease.setAttribute('points', shape.crease.map(p => p.join(',')).join(' '));
+      if (shape.crease.length === 2) {
+        gradient.setAttribute('gradientUnits','userSpaceOnUse');
+        const x = (shape.crease[0][0] + shape.crease[1][0]) / 2, y = (shape.crease[0][1] + shape.crease[1][1]) / 2;
+        const length = Math.hypot(...shape.normal);
+        gradient.setAttribute('x1',x); gradient.setAttribute('y1',y);
+        gradient.setAttribute('x2',x - 80 * shape.normal[0] / length); gradient.setAttribute('y2',y - 80 * shape.normal[1] / length);
+      }
+      if (time === 1) finish(); else frame = requestAnimationFrame(turn);
+    }
+    frame = requestAnimationFrame(turn);
+  }
   if (introduce) {
     const reveal = () => { document.documentElement.dataset.view = 'featured'; render(); scheduleCatalog(); };
-    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) reveal();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) reveal();
     else Promise.race([
       $('gallery').querySelector('img').decode().catch(() => {}),
       new Promise(resolve => setTimeout(resolve, 180))
-    ]).then(() => document.startViewTransition(reveal).ready.catch(() => {}));
+    ]).then(() => openCover(reveal));
   } else scheduleCatalog();
 }
