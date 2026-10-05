@@ -9,7 +9,7 @@ export function similarReports(reports, selected, limit = 12) {
 }
 export function foldPaper(width, height, progress) {
   const p = Math.max(.0001, Math.min(1, progress));
-  const dx = 2.25 * width * p, dy = height * (.4 * Math.sin(Math.PI * p) + .08 * p);
+  const dx = 2.25 * width * p, dy = 2.25 * height * p;
   const edge = dx * (width - dx / 2) - dy * dy / 2;
   const score = ([x, y]) => dx * x - dy * y - edge;
   const rectangle = [[0,0],[width,0],[width,height],[0,height]];
@@ -211,9 +211,10 @@ if (typeof document !== 'undefined') {
     Object.assign(cover.style, {display:'flex',width:'100%',height:'100%',aspectRatio:'auto',transform:'none',viewTransitionName:'none'});
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
-    svg.innerHTML = '<defs><linearGradient id="paper-back"><stop stop-color="var(--crease)"/><stop offset="1" stop-color="var(--paper)"/></linearGradient></defs><polygon class="paper-back" fill="url(#paper-back)"/><polyline class="paper-crease"/>';
+    svg.innerHTML = '<defs><linearGradient id="paper-back"><stop stop-color="var(--crease)"/><stop offset=".35" stop-color="var(--paper)"/><stop offset="1" stop-color="var(--paper)"/></linearGradient><clipPath id="paper-back-clip"><polygon/></clipPath></defs><g clip-path="url(#paper-back-clip)"><polygon class="paper-back" fill="url(#paper-back)"/><text class="paper-wordmark" text-anchor="middle" dominant-baseline="middle">Annual reports</text></g><polyline class="paper-crease"/>';
     overlay.append(cover, svg); document.body.append(overlay); reveal();
     const back = svg.querySelector('polygon'), crease = svg.querySelector('polyline');
+    const face = svg.querySelector('.paper-back'), wordmark = svg.querySelector('text');
     const gradient = svg.querySelector('linearGradient');
     const duration = innerWidth > 760 ? 2400 : 1800, started = performance.now();
     overlay.dataset.duration = duration;
@@ -232,7 +233,11 @@ if (typeof document !== 'undefined') {
       const shape = foldPaper(box.width, box.height, progress);
       cover.style.clipPath = shape.front.length ? `polygon(${shape.front.map(p => `${p[0]}px ${p[1]}px`).join(',')})` : 'inset(0 100% 0 0)';
       back.setAttribute('points', shape.back.map(p => p.join(',')).join(' '));
-      back.style.filter = `drop-shadow(${-3 - 5 * Math.sin(Math.PI * progress)}px ${3 + 7 * Math.sin(Math.PI * progress)}px ${3 + 13 * Math.sin(Math.PI * progress)}px #0002)`;
+      face.setAttribute('points',back.getAttribute('points'));
+      const corners = shape.back.filter((_,i)=>i%16===0);
+      const center = corners.reduce((sum,p)=>[sum[0]+p[0]/corners.length,sum[1]+p[1]/corners.length],[0,0]);
+      wordmark.setAttribute('transform',`translate(${center.join(' ')}) rotate(${Math.atan2(shape.normal[1],shape.normal[0])*180/Math.PI-90})`);
+      wordmark.setAttribute('font-size',Math.min(box.width*.09,box.height*.14));
       crease.setAttribute('points', shape.crease.map(p => p.join(',')).join(' '));
       if (shape.crease.length === 2) {
         gradient.setAttribute('gradientUnits','userSpaceOnUse');

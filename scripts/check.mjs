@@ -34,7 +34,7 @@ for(const [w,h] of [[1360,765],[350,466]]){
   const shape=foldPaper(w,h,p),remaining=area(shape.front);
   assert.ok(remaining<=previous+1);previous=remaining;
   assert.ok(shape.front.every(([x,y])=>x>=-.001&&x<=w+.001&&y>=-.001&&y<=h+.001));
-  const dx=2.25*w*p,dy=h*(.4*Math.sin(Math.PI*p)+.08*p);
+  const dx=2.25*w*p,dy=2.25*h*p;
   assert.ok(shape.back.some(([x,y])=>Math.hypot(x-(w-dx),y-(h-dy))<.001));
   assert.ok(shape.crease.every(q=>shape.front.some(f=>Math.hypot(q[0]-f[0],q[1]-f[1])<.001)));
  }
