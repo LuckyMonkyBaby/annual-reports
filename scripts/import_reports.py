@@ -1,24 +1,37 @@
 """Import real SEC ARS PDFs and render page one. Stdlib + Poppler only."""
-import argparse, csv, datetime, html, io, json, os, re, subprocess, tempfile, time
+import argparse, csv, datetime, html, io, json, os, re, subprocess, tempfile, time, threading
 from pathlib import Path
 from color import cover_features
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = Path(tempfile.gettempdir()) / 'annual-report-atlas-cache'
 CACHE.mkdir(exist_ok=True)
+REQUEST_LOCK = threading.Lock()
+NEXT_REQUEST = 0.0
 UA = os.environ.get('SEC_USER_AGENT', 'AnnualReportAtlas/0.1 lukas@abloatai.com')
 
 
 def get(url, path=None):
+    global NEXT_REQUEST
     if path and path.exists():
         return path.read_bytes()
     for attempt in range(3):
         try:
-            data = subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '60', '--user-agent', UA, url], check=True, capture_output=True).stdout
+            with REQUEST_LOCK:
+                time.sleep(max(0, NEXT_REQUEST-time.monotonic()))
+                NEXT_REQUEST = time.monotonic()+.2
+            response = subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '60', '--user-agent', UA, '--write-out', '\n%{http_code}', url], capture_output=True)
+            data, _, status = response.stdout.rpartition(b'\n')
+            if status in [b'404', b'410']:
+                raise FileNotFoundError(url)
+            response.check_returncode()
             if path:
-                path.write_bytes(data)
-            time.sleep(.35)
+                with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temporary:
+                    temporary.write(data)
+                Path(temporary.name).replace(path)
             return data
+        except FileNotFoundError:
+            raise
         except Exception:
             if attempt == 2:
                 raise
@@ -43,8 +56,6 @@ def import_one(row):
     record = CACHE / f'{key}.json'
     entity = json.loads(get(f'https://data.sec.gov/submissions/CIK{int(cik):010d}.json', CACHE / f'entity-{cik}.json'))
     state = entity.get('stateOfIncorporation', '')
-    if state not in 'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split():
-        raise ValueError(f'not US-incorporated: {state}')
     if record.exists() and cover.exists():
         result = json.loads(record.read_text())
         result['cover'] = f'covers/{key}.webp'
@@ -75,7 +86,7 @@ def import_one(row):
 
 
 def is_plain_form(text, features):
-    heading = re.search(r'SECURITIES\s+AND\s+EXCHANGE\s+COMMISSION', text, re.I) and re.search(r'FORM\s+10[-–]?[KQ]', text, re.I)
+    heading = re.search(r'SECURITIES\s+AND\s+EXCHANGE\s+COMMISSION', text, re.I) and re.search(r'FORM\s*10\s*[-‐‑‒–—−]?\s*[KQ]\b', text, re.I)
     # ponytail: monochrome SEC form headers only; preserve monochrome designed covers.
     return bool(heading and features['chromaticFraction'] < .08)
 
@@ -86,7 +97,7 @@ def sp500_universe():
     lines = source.splitlines()
     header = next(i for i,line in enumerate(lines) if line.startswith('Ticker,Name,'))
     holdings = list(csv.DictReader(io.StringIO('\n'.join(lines[header:]))))
-    tickers = {r['Ticker'].replace('.', '-') for r in holdings if r.get('Asset Class') == 'Equity'}
+    tickers = {r['Ticker'].replace('.', '-').replace(' ', '-') for r in holdings if r.get('Asset Class') == 'Equity'}
     entities = json.loads(get('https://www.sec.gov/files/company_tickers.json', CACHE/'sec-tickers.json'))
     allowed = {str(r['cik_str']) for r in entities.values() if r['ticker'].replace('.', '-') in tickers}
     provenance = {'source':url, 'asOf':next(csv.reader([lines[1]]))[1], 'method':'Equity holdings of IVV, an S&P 500 tracking ETF; membership proxy, not an official S&P constituent license.', 'ciks':sorted(allowed), 'tickers':sorted(tickers)}

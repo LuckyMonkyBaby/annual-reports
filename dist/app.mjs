@@ -35,6 +35,7 @@ if (typeof document !== 'undefined') {
     const stage = document.createElement('div');
     stage.className = 'cover-stage';
     const img = document.createElement('img');
+    img.addEventListener('load', () => card.style.setProperty('--cover-ratio', img.naturalWidth / img.naturalHeight));
     img.src = r.cover; img.alt = `${r.company} ${r.year} cover`;
     img.loading = 'lazy'; img.decoding = 'async';
     stage.append(img);

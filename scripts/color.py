@@ -4,12 +4,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 def cover_features(path):
-    pdf = Path(tempfile.gettempdir())/'annual-report-atlas-cache'/f'{path.stem}.pdf'
-    ppm = subprocess.run(['pdftoppm', '-f', '1', '-singlefile', '-scale-to', '32', str(pdf)], capture_output=True, check=True).stdout
-    header = re.match(rb'P6\s+(?:#[^\n]*\n\s*)?\d+\s+\d+\s+255\s', ppm)
+    ppm = subprocess.run(['dwebp', str(path), '-ppm', '-o', '-'], capture_output=True, check=True).stdout
+    header = re.match(rb'P6\s+(?:#[^\n]*\n\s*)?(\d+)\s+(\d+)\s+255\s', ppm)
     if not header:
         raise ValueError('Invalid PPM image')
-    pixels = ppm[header.end():]
+    width,height = map(int,header.groups())
+    raw = ppm[header.end():]
+    pixels = bytearray()
+    for y in range(32):
+        for x in range(32):
+            index=(min(height-1,int((y+.5)*height/32))*width+min(width-1,int((x+.5)*width/32)))*3
+            pixels.extend(raw[index:index+3])
     chromatic, neutral = collections.defaultdict(list), collections.defaultdict(list)
     for i in range(0, len(pixels), 3):
         rgb = tuple(pixels[i:i+3])
