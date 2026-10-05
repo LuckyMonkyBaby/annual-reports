@@ -27,19 +27,19 @@ const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
 for(const source of ['app.mjs','style.css']){const [stem,ext]=source.split('.');const bytes=readFileSync(new URL('../dist/'+source,import.meta.url));const name=`${stem}-${createHash('sha256').update(bytes).digest('hex').slice(0,12)}.${ext}`;assert.ok(html.includes(name));assert.deepEqual(readFileSync(new URL('../dist/'+name,import.meta.url)),bytes)}
 console.log('PASS: immutable app/style hashes match source and HTML references');
 
-for(const [w,h] of [[1360,765],[350,466]]){
+for(const [w,h,diagonal] of [[1360,765,true],[350,466,false]]){
  const area=points=>Math.abs(points.reduce((sum,[x,y],i)=>{const [xx,yy]=points[(i+1)%points.length];return sum+x*yy-xx*y},0))/2;
  let previous=w*h;
  for(const p of [.001,.1,.25,.5,.75,.9,1]){
-  const shape=foldPaper(w,h,p),remaining=area(shape.front);
+  const shape=foldPaper(w,h,p,diagonal),remaining=area(shape.front);
   assert.ok(remaining<=previous+1);previous=remaining;
   assert.ok(shape.front.every(([x,y])=>x>=-.001&&x<=w+.001&&y>=-.001&&y<=h+.001));
-  const dx=2.25*w*p,dy=2.25*h*p;
+  const dx=2.25*w*p,dy=diagonal?2.25*h*p:h*(.4*Math.sin(Math.PI*p)+.08*p);
   assert.ok(shape.back.some(([x,y])=>Math.hypot(x-(w-dx),y-(h-dy))<.001));
   assert.ok(shape.crease.every(q=>shape.front.some(f=>Math.hypot(q[0]-f[0],q[1]-f[1])<.001)));
  }
  assert.equal(previous,0);
- const back=foldPaper(w,h,.5).back;
+ const back=foldPaper(w,h,.5,diagonal).back;
  assert.ok(back.some((q,i)=>i%16===8&&Math.hypot(q[0]-(back[i-8][0]+back[(i+8)%back.length][0])/2,q[1]-(back[i-8][1]+back[(i+8)%back.length][1])/2)>1),'The lifted underside must bend rather than stay a rigid triangle');
 }
 console.log('PASS: bottom-right paper fold reflects the dragged corner, anchors its crease and progressively reveals both cover orientations');
