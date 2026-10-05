@@ -10,7 +10,10 @@ export function similarReports(reports, selected, limit = 12) {
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   let reports = [], filtered = [], shown = 0, selected = null, transition;
+  const coverRatios = new Map();
+  let reusableCards = new Map();
   function alignToolbar() {
+    if (document.activeElement === $('search')) return;
     const cards = [...$('gallery').children];
     if (!cards.length) return;
     const top = cards[0].getBoundingClientRect().top;
@@ -50,21 +53,31 @@ if (typeof document !== 'undefined') {
     const update = () => { render(); window.scrollTo({top: 0, behavior: 'instant'}); };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       transition?.skipTransition();
-      transition = document.startViewTransition(update);
+      transition = document.startViewTransition(async () => {
+        update();
+        await Promise.all([...$('gallery').querySelectorAll('img')].filter(img => img.closest('.card').getBoundingClientRect().top < innerHeight + 200).map(img => {
+          img.loading = 'eager';
+          return img.decode().catch(() => {});
+        }));
+        alignToolbar();
+      });
       transition.ready.catch(() => {});
     } else update();
   }
   function makeCard(r, isSelected = false) {
+    const existing = reusableCards.get(r.id);
+    if (!isSelected && existing?.tagName === 'BUTTON') { preloader.observe(existing); return existing; }
     const card = document.createElement(isSelected ? 'article' : 'button');
     card.className = isSelected ? 'card selected-card' : 'card';
     card.dataset.reportId = r.id;
+    if (coverRatios.has(r.id)) card.style.setProperty('--cover-ratio', coverRatios.get(r.id));
     card.setAttribute('aria-label', isSelected ? `Show all reports; selected ${r.company} ${r.year}` : `Show colors similar to ${r.company} ${r.year}`);
     if (!isSelected) card.setAttribute('aria-pressed', 'false');
     const stage = document.createElement('div');
     stage.className = 'cover-stage';
     const img = document.createElement('img');
     img.style.viewTransitionName = `cover-${r.id}`;
-    img.addEventListener('load', () => { card.style.setProperty('--cover-ratio', img.naturalWidth / img.naturalHeight); alignToolbar(); });
+    img.addEventListener('load', () => { const ratio = img.naturalWidth / img.naturalHeight; coverRatios.set(r.id, ratio); card.style.setProperty('--cover-ratio', ratio); alignToolbar(); });
     img.src = r.cover; img.alt = `${r.company} ${r.year} cover`;
     img.loading = 'lazy'; img.decoding = 'async';
     stage.append(img);
@@ -94,6 +107,7 @@ if (typeof document !== 'undefined') {
     return card;
   }
   function render() {
+    reusableCards = new Map([...$('gallery').children].map(card => [card.dataset.reportId, card]));
     filtered = selected ? similarReports(reports, selected) : selectReports(reports, $('search').value);
     shown = 0;
     observer.unobserve(sentinel);
@@ -127,7 +141,11 @@ if (typeof document !== 'undefined') {
   fetch('reports.json').then(r => {
     if (!r.ok) throw Error('Collection unavailable');
     return r.json();
-  }).then(data => { reports = data.reports; render(); }).catch(() => {
+  }).then(data => {
+    reports = data.reports;
+    if (new URLSearchParams(location.search).get('view') !== 'all') selected = reports.find(r => r.cik === '886982' && r.year === 2024) || reports[0];
+    render();
+  }).catch(() => {
     $('gallery').textContent = 'The collection could not load. Please reload to try again.';
   });
 }

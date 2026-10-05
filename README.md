@@ -1,6 +1,6 @@
 # annual-reports
 
-A minimal, white annual-report cover gallery. Use Ctrl+F / Cmd+F to search by company, ticker or year; click a cover for nearby color matches and its original PDF.
+A minimal, white annual-report cover gallery. The front page opens an enlarged featured report with color matches; “All reports” opens the full collection. Use Ctrl+F / Cmd+F to search by company, ticker or year; click a cover for nearby color matches and its original PDF.
 
 Live: https://annual-reports-chi.vercel.app/
 
