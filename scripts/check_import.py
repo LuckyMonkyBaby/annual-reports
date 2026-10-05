@@ -26,3 +26,13 @@ with tempfile.TemporaryDirectory() as folder:
             assert str(error)=='plain SEC form first page'
         assert ocr.call_args.args[0][0]=='tesseract'
 print('PASS: garbled PDF text invokes local OCR and the plain form is rejected')
+
+with tempfile.TemporaryDirectory() as folder:
+    with patch.object(import_archive,'CACHE',Path(folder)), patch.object(import_archive,'get',side_effect=RuntimeError('curl connection failed')) as download:
+        try:
+            import_archive.archive_report(({'cik_str':1,'title':'Example','tickers':['TEST'],'exchanges':['NYSE']},2020))
+            raise AssertionError('transport failure was hidden as an absent report')
+        except RuntimeError as error:
+            assert 'archive download failed' in str(error)
+        assert download.call_count==1
+print('PASS: archive transport errors remain distinguishable from absent documents')

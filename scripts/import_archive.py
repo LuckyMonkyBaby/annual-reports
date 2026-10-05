@@ -94,6 +94,8 @@ def archive_report(job):
         except Exception as e:
             if isinstance(e,(FileNotFoundError,ValueError)):
                 cache.write_text(json.dumps({'error':str(e)[:200]}))
+            else:
+                raise RuntimeError(f'archive download failed: {e}') from e
         finally:
             pdf.unlink(missing_ok=True)
     raise ValueError('no qualifying designed archive PDF found')
@@ -124,11 +126,13 @@ def main():
     out=ROOT/'dist/reports.json'
     existing=json.loads(out.read_text())['reports'] if out.exists() else []
     reports={(r['cik'],r['year']):r for r in existing if r['cik'] in allowed and args.start<=r['year']<=args.end and r.get('filterVersion')==2}
-    failures=[];index_failures=[];now=datetime.datetime.now(datetime.timezone.utc)
+    failures=[];index_failures=[];archive_status={'state':'pending'};now=datetime.datetime.now(datetime.timezone.utc)
     def save():
         payload={'updated':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source':'SEC EDGAR ARS and AnnualReports.com archive','scope':'Designed first pages for current S&P 500 tracking-fund equity issuers; published reports only. Coverage is incomplete where no qualifying PDF is found.','years':[args.start,args.end],'universe':{'source':universe['source'],'asOf':universe['asOf'],'method':universe['method']},'reports':sorted(reports.values(),key=lambda r:(-r['year'],r['company'])),'failures':failures,'indexFailures':index_failures}
+        payload['archiveStatus']=archive_status
         temp=out.with_suffix('.tmp');temp.write_text(json.dumps(payload,separators=(',',':'))+'\n');temp.replace(out)
         coverage={'updated':payload['updated'],'membershipAsOf':universe['asOf'],'companies':len(companies),'reportCount':len(reports),'byYear':{str(y):sum(r['year']==y for r in reports.values()) for y in range(args.start,args.end+1)},'missing':[{'cik':cik,'company':c['title'],'year':y} for cik,c in companies.items() for y in range(args.start,args.end+1) if (cik,y) not in reports],'failures':failures,'indexFailures':index_failures}
+        coverage['archiveStatus']=archive_status
         (ROOT/'scripts/coverage.json').write_text(json.dumps(coverage,separators=(',',':'))+'\n')
     rows=[]
     for year in range(args.start,args.end+1):
@@ -158,6 +162,18 @@ def main():
                 save();print(f'SEC {i}/{len(rows)}: {len(reports)} designed covers; {len(failures)} skipped',flush=True)
     jobs=[(company,year) for company in sorted(companies.values(),key=lambda c:c['title']) for year in range(args.start,args.end+1) if (str(company['cik_str']),year) not in reports]
     print(f'ARCHIVE backfill: {len(jobs)} company-years',flush=True)
+    # Check a known document before queuing thousands of requests to the same host.
+    probe=CACHE/'archive-connectivity-probe.pdf'
+    try:
+        get('https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AMZN_2020.pdf',probe)
+    except Exception as e:
+        archive_status={'state':'blocked','error':str(e)[:180]}
+        save()
+        print(f'ARCHIVE blocked: {e}',flush=True)
+        return
+    finally:
+        probe.unlink(missing_ok=True)
+    archive_status={'state':'running'}
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
         tasks={pool.submit(archive_report,job):job for job in jobs}
         for i,task in enumerate(concurrent.futures.as_completed(tasks),1):
@@ -168,6 +184,7 @@ def main():
                 failures.append({'source':'archive','cik':str(company['cik_str']),'company':company['title'],'year':year,'error':str(e)[:180]})
             if i%20==0 or i==len(jobs):
                 save();print(f'ARCHIVE {i}/{len(jobs)}: {len(reports)} designed covers; {len(failures)} skipped',flush=True)
+    archive_status={'state':'complete'}
     save()
     used={r['cover'] for r in reports.values()}
     for cover in (ROOT/'dist/covers').glob('*.webp'):
