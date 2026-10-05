@@ -23,9 +23,17 @@ export function foldPaper(width, height, progress) {
     return points;
   });
   const turned = clip(1);
-  const shape = {front:clip(-1), back:turned.map(point => {
+  const length = Math.hypot(dx,dy), depth = Math.max(...turned.map(point => score(point) / length));
+  // Bend the projected underside continuously between the crease and lifted corner.
+  const bend = Math.min(depth * .15, Math.min(width,height) * .075) * Math.sin(Math.PI * p);
+  const underside = turned.flatMap((a,i) => {
+    const b = turned[(i+1)%turned.length];
+    return Array.from({length:16},(_,j) => [a[0]+(b[0]-a[0])*j/16,a[1]+(b[1]-a[1])*j/16]);
+  });
+  const shape = {front:clip(-1), back:underside.map(point => {
     const amount = 2 * score(point) / (dx * dx + dy * dy);
-    return [point[0] - amount * dx, point[1] + amount * dy];
+    const curve = depth > 0 ? bend * Math.sin(Math.PI * score(point) / length / depth) / length : 0;
+    return [point[0] - amount * dx + curve * dx, point[1] + amount * dy - curve * dy];
   }), crease:turned.filter(point => Math.abs(score(point)) < .001)};
   for (const key of ['front','back','crease']) shape[key] = shape[key].map(([x,y]) => [x,height-y]);
   return {...shape,normal:[dx,dy]};
@@ -207,7 +215,7 @@ if (typeof document !== 'undefined') {
     overlay.append(cover, svg); document.body.append(overlay); reveal();
     const back = svg.querySelector('polygon'), crease = svg.querySelector('polyline');
     const gradient = svg.querySelector('linearGradient');
-    const duration = innerWidth > 760 ? 2000 : 1300, started = performance.now();
+    const duration = innerWidth > 760 ? 2400 : 1800, started = performance.now();
     overlay.dataset.duration = duration;
     const events = ['wheel','touchstart','pointerdown','keydown','resize'];
     let frame, done = false;
@@ -219,17 +227,20 @@ if (typeof document !== 'undefined') {
     events.forEach(event => window.addEventListener(event, finish, {passive:true}));
     function turn(now) {
       if (done) return;
-      const time = Math.min(1, (now - started) / duration), progress = .5 - .5 * Math.cos(Math.PI * time);
+      const time = Math.min(1, (now - started) / duration);
+      const progress = time * time * time * (time * (time * 6 - 15) + 10);
       const shape = foldPaper(box.width, box.height, progress);
       cover.style.clipPath = shape.front.length ? `polygon(${shape.front.map(p => `${p[0]}px ${p[1]}px`).join(',')})` : 'inset(0 100% 0 0)';
       back.setAttribute('points', shape.back.map(p => p.join(',')).join(' '));
+      back.style.filter = `drop-shadow(${-3 - 5 * Math.sin(Math.PI * progress)}px ${3 + 7 * Math.sin(Math.PI * progress)}px ${3 + 13 * Math.sin(Math.PI * progress)}px #0004)`;
       crease.setAttribute('points', shape.crease.map(p => p.join(',')).join(' '));
       if (shape.crease.length === 2) {
         gradient.setAttribute('gradientUnits','userSpaceOnUse');
         const x = (shape.crease[0][0] + shape.crease[1][0]) / 2, y = (shape.crease[0][1] + shape.crease[1][1]) / 2;
         const length = Math.hypot(...shape.normal);
         gradient.setAttribute('x1',x); gradient.setAttribute('y1',y);
-        gradient.setAttribute('x2',x - 80 * shape.normal[0] / length); gradient.setAttribute('y2',y - 80 * shape.normal[1] / length);
+        const lightWidth = 12 + Math.min(box.width,box.height) * .12 * Math.sin(Math.PI * progress);
+        gradient.setAttribute('x2',x - lightWidth * shape.normal[0] / length); gradient.setAttribute('y2',y - lightWidth * shape.normal[1] / length);
       }
       if (time === 1) finish(); else frame = requestAnimationFrame(turn);
     }

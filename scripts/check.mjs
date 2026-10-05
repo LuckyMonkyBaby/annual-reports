@@ -39,5 +39,7 @@ for(const [w,h] of [[1360,765],[350,466]]){
   assert.ok(shape.crease.every(q=>shape.front.some(f=>Math.hypot(q[0]-f[0],q[1]-f[1])<.001)));
  }
  assert.equal(previous,0);
+ const back=foldPaper(w,h,.5).back;
+ assert.ok(back.some((q,i)=>i%16===8&&Math.hypot(q[0]-(back[i-8][0]+back[(i+8)%back.length][0])/2,q[1]-(back[i-8][1]+back[(i+8)%back.length][1])/2)>1),'The lifted underside must bend rather than stay a rigid triangle');
 }
 console.log('PASS: bottom-right paper fold reflects the dragged corner, anchors its crease and progressively reveals both cover orientations');
