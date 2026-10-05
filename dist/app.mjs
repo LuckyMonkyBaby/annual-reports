@@ -9,6 +9,7 @@ export function similarReports(reports, selected, limit = 12) {
 }
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
+  const isFeatured = new URLSearchParams(location.search).get('view') !== 'all';
   let reports = [], filtered = [], shown = 0, selected = null, transition;
   const coverRatios = new Map();
   let reusableCards = new Map();
@@ -18,14 +19,16 @@ if (typeof document !== 'undefined') {
     if (!cards.length) return;
     const top = cards[0].getBoundingClientRect().top;
     const row = cards.filter(card => Math.abs(card.getBoundingClientRect().top - top) < 2);
-    const bounds = row.map(card => card.querySelector('.card-caption').getBoundingClientRect());
+    const bounds = row.map(card => { const img = card.querySelector('img'); return (img.naturalWidth ? img : card.querySelector('.card-caption')).getBoundingClientRect(); });
     const header = document.querySelector('header');
+    const nav = document.querySelector('.site-nav');
     const box = header.getBoundingClientRect();
     const left = bounds[0].left, right = Math.max(...bounds.map(b => b.right));
     // Keep the controls usable when a narrow cover cannot fit the mobile toolbar.
-    if (right - left < 280) { header.style.removeProperty('padding-left'); header.style.removeProperty('padding-right'); return; }
-    header.style.paddingLeft = `${left - box.left}px`;
-    header.style.paddingRight = `${box.right - right}px`;
+    for (const bar of [header, nav]) {
+      if (right - left < 280) { bar.style.removeProperty('padding-left'); bar.style.removeProperty('padding-right'); }
+      else { bar.style.paddingLeft = `${left - box.left}px`; bar.style.paddingRight = `${box.right - right}px`; }
+    }
   }
   new ResizeObserver(alignToolbar).observe($('gallery'));
   const name = s => s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
@@ -114,7 +117,7 @@ if (typeof document !== 'undefined') {
     preloader.disconnect();
     $('empty').hidden = filtered.length > 0 || !!selected;
     $('clear-search').hidden = !$('search').value;
-    $('pdf-link').hidden = $('reset').hidden = !selected;
+    $('pdf-link').hidden = $('reset').hidden = !selected || isFeatured;
     if (selected) $('pdf-link').href = selected.pdf;
     $('gallery').classList.toggle('selected-mode', !!selected);
     document.body.classList.toggle('filtered', !!selected);
@@ -143,7 +146,7 @@ if (typeof document !== 'undefined') {
     return r.json();
   }).then(data => {
     reports = data.reports;
-    if (new URLSearchParams(location.search).get('view') !== 'all') selected = reports.find(r => r.cik === '886982' && r.year === 2024) || reports[0];
+    if (isFeatured) selected = reports.find(r => r.cik === '886982' && r.year === 2024) || reports[0];
     render();
   }).catch(() => {
     $('gallery').textContent = 'The collection could not load. Please reload to try again.';

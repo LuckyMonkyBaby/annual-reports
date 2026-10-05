@@ -76,6 +76,10 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  }
  const home=await browser.newPage({viewport:{width:1440,height:1000}});await home.goto(baseURL);await home.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);
  assert.equal(await home.locator('#gallery .card').count(),13);assert.ok(await home.locator('.selected-card').getAttribute('aria-label').then(t=>t.includes('GOLDMAN')));assert.equal(await home.locator('.site-nav').isVisible(),true);
+ assert.equal(await home.locator('#pdf-link').isVisible(),false);assert.equal(await home.locator('#reset').isVisible(),false);
+ assert.equal(await home.locator('footer a').count(),1);assert.equal(await home.locator('#reset svg.lucide-x').count(),1);assert.equal(await home.locator('#clear-search svg.lucide-x').count(),1);
+ assert.ok(await home.locator('.wordmark').evaluate(e=>Math.abs(e.getBoundingClientRect().left-document.querySelector('.selected-card img').getBoundingClientRect().left)<2));
+ assert.ok(await home.locator('.site-nav').evaluate(nav=>{const first=document.querySelector('.selected-card').getBoundingClientRect().top,cards=[...document.querySelectorAll('#gallery>.card')].filter(c=>Math.abs(c.getBoundingClientRect().top-first)<2),right=Math.max(...cards.map(c=>c.querySelector('img').getBoundingClientRect().right));return Math.abs(nav.lastElementChild.getBoundingClientRect().right-right)<2}));
  await home.screenshot({path:'/private/tmp/annual-report-atlas-demo/featured-home.png'});
  await home.locator('footer').scrollIntoViewIfNeeded();await home.screenshot({path:'/private/tmp/annual-report-atlas-demo/footer.png'});
  await home.locator('.site-nav a').last().click();await home.waitForFunction(()=>document.querySelectorAll('#gallery .card').length>=48);assert.equal(await home.locator('.selected-card').count(),0);await home.close();
