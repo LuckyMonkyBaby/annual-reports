@@ -10,6 +10,21 @@ export function similarReports(reports, selected, limit = 12) {
 if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   let reports = [], filtered = [], shown = 0, selected = null, transition;
+  function alignToolbar() {
+    const cards = [...$('gallery').children];
+    if (!cards.length) return;
+    const top = cards[0].getBoundingClientRect().top;
+    const row = cards.filter(card => Math.abs(card.getBoundingClientRect().top - top) < 2);
+    const bounds = row.map(card => card.querySelector('.card-caption').getBoundingClientRect());
+    const header = document.querySelector('header');
+    const box = header.getBoundingClientRect();
+    const left = bounds[0].left, right = Math.max(...bounds.map(b => b.right));
+    // Keep the controls usable when a narrow cover cannot fit the mobile toolbar.
+    if (right - left < 280) { header.style.removeProperty('padding-left'); header.style.removeProperty('padding-right'); return; }
+    header.style.paddingLeft = `${left - box.left}px`;
+    header.style.paddingRight = `${box.right - right}px`;
+  }
+  new ResizeObserver(alignToolbar).observe($('gallery'));
   const name = s => s === s.toUpperCase() ? s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : s;
   const preloader = new IntersectionObserver(entries => {
     for (const entry of entries) {
@@ -49,7 +64,7 @@ if (typeof document !== 'undefined') {
     stage.className = 'cover-stage';
     const img = document.createElement('img');
     img.style.viewTransitionName = `cover-${r.id}`;
-    img.addEventListener('load', () => card.style.setProperty('--cover-ratio', img.naturalWidth / img.naturalHeight));
+    img.addEventListener('load', () => { card.style.setProperty('--cover-ratio', img.naturalWidth / img.naturalHeight); alignToolbar(); });
     img.src = r.cover; img.alt = `${r.company} ${r.year} cover`;
     img.loading = 'lazy'; img.decoding = 'async';
     stage.append(img);
@@ -92,6 +107,7 @@ if (typeof document !== 'undefined') {
     $('gallery').replaceChildren();
     if (selected) $('gallery').append(makeCard(selected, true));
     append();
+    alignToolbar();
     if (shown < filtered.length) observer.observe(sentinel);
   }
   $('search').addEventListener('input', () => { transition?.skipTransition(); selected = null; render(); });

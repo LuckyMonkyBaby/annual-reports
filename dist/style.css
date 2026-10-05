@@ -9,7 +9,7 @@ header,main{max-width:1500px;margin:auto;padding:0 40px}header{height:88px;displ
 .card-caption{width:min(100%,calc(var(--cover-height,360px)*var(--cover-ratio,.67)));margin-inline:auto;display:flex;justify-content:space-between;align-items:start;gap:8px;padding-top:13px;font-size:10px;line-height:1.5;color:#777}.card-year{color:#aaa;flex-shrink:0}
 .empty{padding:60px;text-align:center;color:#777}.empty h2{font-weight:400}.empty button{background:#fff;border:0;text-decoration:underline;padding:10px}
 header{justify-content:space-between}.report-actions{display:flex;align-items:center;gap:16px}.report-actions a{font-size:11px;color:#777;text-underline-offset:4px}.report-actions button{border:0;background:#fff;color:#777;font-size:20px;padding:5px}
-.selected-card{grid-column:span 2;grid-row:span 6;align-self:stretch;display:block;--cover-height:max(360px,calc(100dvh - 145px))}.selected-card .card-inner{position:sticky;top:20px}.selected-card .cover-stage{height:var(--cover-height)}.selected-card:hover img{opacity:1}
+.selected-card{grid-column:span 2;grid-row:span 2;align-self:start;display:block;--cover-height:max(360px,calc(100dvh - 145px))}.selected-card .card-inner{position:static}.selected-card .cover-stage{height:var(--cover-height)}.selected-card:hover img{opacity:1}
 ::view-transition-group(*){animation-duration:280ms}::view-transition-old(root),::view-transition-new(root){animation-duration:160ms}
 [hidden]{display:none!important}
 @media(min-width:1400px){.gallery{--cover-height:405px}}

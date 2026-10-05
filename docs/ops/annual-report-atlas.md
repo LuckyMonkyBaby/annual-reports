@@ -8,7 +8,7 @@ The collection targets published reporting years 2020–2026 across current S&P 
 
 `year` uses the first-page annual-report title when available, otherwise the SEC reporting-period year. Both `yearBasis` and the original `period`/`filed` dates remain in the data. This avoids labeling a 2024 report as 2025 simply because its fiscal year ends in January 2025.
 
-On desktop the selected cover spans two columns and six grid rows, with its image sticky while related covers scroll beside it. On mobile it occupies the full gallery width above the matches. Clicking the selected cover, the toolbar reset, or Escape restores browsing. Captions use the rendered image width and an inset; the custom search clear button replaces the native browser icon. Reduced-motion preferences disable the view transition.
+On desktop the selected cover spans two columns and two grid rows, scrolls naturally, and returns to four columns beneath it. On mobile it occupies the full gallery width above the matches. Clicking the selected cover, the toolbar reset, or Escape restores browsing. Toolbar edges follow the first row’s rendered cover bounds on load and resize; narrow mobile rows keep enough space for the controls. Captions use the rendered image width and an inset; the custom search clear button replaces the native browser icon. Reduced-motion preferences disable the view transition.
 
 ## Image filtering and similarity
 
