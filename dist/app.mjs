@@ -117,7 +117,8 @@ if (typeof document !== 'undefined') {
     preloader.disconnect();
     $('empty').hidden = filtered.length > 0 || !!selected;
     $('clear-search').hidden = !$('search').value;
-    $('pdf-link').hidden = $('reset').hidden = !selected || isFeatured;
+    $('pdf-link').hidden = !selected;
+    $('reset').hidden = !selected || isFeatured;
     if (selected) $('pdf-link').href = selected.pdf;
     $('gallery').classList.toggle('selected-mode', !!selected);
     document.body.classList.toggle('filtered', !!selected);

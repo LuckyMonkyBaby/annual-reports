@@ -35,7 +35,7 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  await page.locator('#search').fill('');
  await page.keyboard.press('Control+f');assert.equal(await page.locator('#search').evaluate(e=>document.activeElement===e),true);
  await page.locator('#search').fill('ALTRIA');await page.waitForTimeout(700);assert.ok(await page.locator('#gallery .card').count()>=1);
- assert.ok(await page.locator('#clear-search').evaluate(e=>e.getBoundingClientRect().left-document.querySelector('#search').getBoundingClientRect().right>=10));
+ assert.ok(await page.locator('#clear-search').evaluate(e=>document.querySelector('#search').getBoundingClientRect().left-e.getBoundingClientRect().right>=10));
  await page.keyboard.press('Meta+f');assert.equal(await page.locator('#search').evaluate(e=>e.selectionStart===0&&e.selectionEnd===e.value.length),true);
  await page.locator('#gallery .card').first().click();await page.waitForFunction(()=>document.querySelector('.selected-card'));await page.waitForTimeout(500);
  assert.equal(await page.locator('#gallery .card').count(),13);
@@ -76,7 +76,7 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  }
  const home=await browser.newPage({viewport:{width:1440,height:1000}});await home.goto(baseURL);await home.waitForFunction(()=>document.querySelector('.selected-card img')?.naturalWidth>0);
  assert.equal(await home.locator('#gallery .card').count(),13);assert.ok(await home.locator('.selected-card').getAttribute('aria-label').then(t=>t.includes('GOLDMAN')));assert.equal(await home.locator('.site-nav').isVisible(),true);
- assert.equal(await home.locator('#pdf-link').isVisible(),false);assert.equal(await home.locator('#reset').isVisible(),false);
+ assert.equal(await home.locator('#pdf-link').isVisible(),true);assert.equal(await home.locator('#reset').isVisible(),false);assert.equal(await home.locator('#pdf-link').innerText(),'Open full report PDF');assert.ok(await home.locator('#search').evaluate(e=>Math.abs(e.getBoundingClientRect().right-document.querySelector('.site-nav>a:last-child').getBoundingClientRect().right)<2));
  assert.equal(await home.locator('footer a').count(),1);assert.equal(await home.locator('#reset svg.lucide-x').count(),1);assert.equal(await home.locator('#clear-search svg.lucide-x').count(),1);
  assert.ok(await home.locator('.wordmark').evaluate(e=>Math.abs(e.getBoundingClientRect().left-document.querySelector('.selected-card img').getBoundingClientRect().left)<2));
  assert.ok(await home.locator('.site-nav').evaluate(nav=>{const first=document.querySelector('.selected-card').getBoundingClientRect().top,cards=[...document.querySelectorAll('#gallery>.card')].filter(c=>Math.abs(c.getBoundingClientRect().top-first)<2),right=Math.max(...cards.map(c=>c.querySelector('img').getBoundingClientRect().right));return Math.abs(nav.lastElementChild.getBoundingClientRect().right-right)<2}));
