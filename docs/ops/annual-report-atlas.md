@@ -4,7 +4,7 @@ The application is a static cover gallery with an acid-yellow (`#e1f57b`) and de
 
 ## Approved palette
 
-“Acid / Plum” is the saved palette selected on October 5, 2026: acid yellow `#e1f57b`, deep plum `#39233d`. Light mode uses acid as the paper and plum as the ink; dark mode reverses them. Preserve this pair when trying other directions. The runtime tokens remain owned by `dist/style.css`; the saved implementation is commit `d319ebd`. [Palette studies](../design/palettes.html) compare the approved pair with Blush / Oxblood, Apricot / Ultramarine and Lilac / Forest using real gallery covers; these are design studies, not a production palette switcher.
+“Acid / Plum” is the saved palette selected on October 5, 2026: acid yellow `#e1f57b`, deep plum `#39233d`. Light mode uses acid as the paper and plum as the ink; dark mode reverses them. Preserve this pair when trying other directions. The runtime tokens remain owned by `dist/style.css`; the saved implementation is commit `d319ebd`. [Palette studies](../design/palettes.html) compare the approved pair with nine alternatives using real gallery covers: Blush / Oxblood, Apricot / Ultramarine, Lilac / Forest, Mandarin / Aubergine, Ice / Rust, Mint / Ink, Periwinkle / Espresso, Butter / Vermilion and Orchid / Midnight; these are design studies, not a production palette switcher.
 
 ## Source boundary
 
