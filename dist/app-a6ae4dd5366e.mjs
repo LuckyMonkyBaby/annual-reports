@@ -47,12 +47,26 @@ if (typeof document !== 'undefined') {
   let reusableCards = new Map();
   let catalogPromise;
   function loadCatalog() {
-    return catalogPromise ||= fetch('catalog.json', {priority:'low'}).then(r => {
+    return catalogPromise ||= fetch('catalog.json?v=cropbox', {priority:'low'}).then(r => {
       if (!r.ok) throw Error('Collection unavailable');
       return r.json();
     }).then(data => { reports = data.reports; render(); });
   }
   function alignToolbar() {
+    const gallery = $('gallery'), featured = gallery.querySelector('.selected-card');
+    if (featured && innerWidth > 760 && gallery.getBoundingClientRect().width) {
+      const columns = getComputedStyle(gallery).gridTemplateColumns.split(' ').length;
+      const count = columns - 2, nearby = [...gallery.children].slice(1, 1 + count * 2);
+      const captionHeight = cards => Math.max(0, ...cards.map(card => card.querySelector('.card-caption').getBoundingClientRect().height));
+      const height = featured.querySelector('.cover-stage').getBoundingClientRect().width / Number(featured.style.getPropertyValue('--cover-ratio'));
+      featured.style.setProperty('--selected-height', `${height.toFixed(2)}px`);
+      gallery.style.setProperty('--cover-height', `${(height/2).toFixed(2)}px`);
+      const offset = captionHeight(nearby.slice(0,count)) + captionHeight(nearby.slice(count)) + parseFloat(getComputedStyle(gallery).rowGap) - captionHeight([featured]);
+      gallery.style.setProperty('--cover-height', `${Math.max(1,(height-offset)/2).toFixed(2)}px`);
+    } else {
+      gallery.style.removeProperty('--cover-height');
+      featured?.style.removeProperty('--selected-height');
+    }
     if (document.activeElement === $('search')) return;
     const cards = $('gallery').children;
     if (!cards.length) return;

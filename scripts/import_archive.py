@@ -76,17 +76,17 @@ def archive_report(job):
             saved = json.loads(cache.read_text())
             if 'error' in saved:
                 continue
-            if (ROOT/'dist'/saved['cover']).exists() and saved.get('filterVersion')==2:
+            if (ROOT/'dist'/saved['cover']).exists() and saved.get('filterVersion')==2 and saved['cover'].endswith('-crop.webp'):
                 return saved
         pdf = CACHE/f'{key}.pdf'
         try:
             data = get(url, pdf)
             if not data.startswith(b'%PDF-'):
                 raise ValueError('not a PDF')
-            cover = ROOT/'dist/covers'/f'{key}.webp'
-            subprocess.run(['pdftoppm','-f','1','-singlefile','-scale-to','900','-jpeg','-jpegopt','quality=85',str(pdf),str(CACHE/key)],check=True,capture_output=True,timeout=90)
+            cover = ROOT/'dist/covers'/f'{key}-crop.webp'
+            subprocess.run(['pdftoppm','-cropbox','-f','1','-singlefile','-scale-to','900','-jpeg','-jpegopt','quality=85',str(pdf),str(CACHE/key)],check=True,capture_output=True,timeout=90)
             subprocess.run(['cwebp','-quiet','-q','76',str(CACHE/f'{key}.jpg'),'-o',str(cover)],check=True,timeout=30)
-            record = finish({'id':key,'company':company['title'],'cik':cik,'year':year,'period':None,'filed':None,'pdf':url,'filing':None,'cover':f'covers/{key}.webp','form':None,'tickers':tickers,'incorporation':None,'source':'AnnualReports.com archive','yearBasis':'archive year'})
+            record = finish({'id':key,'company':company['title'],'cik':cik,'year':year,'period':None,'filed':None,'pdf':url,'filing':None,'cover':f'covers/{key}-crop.webp','form':None,'tickers':tickers,'incorporation':None,'source':'AnnualReports.com archive','yearBasis':'archive year'})
             if record['year'] != year:
                 raise ValueError('cover title year does not match requested archive year')
             cache.write_text(json.dumps(record))

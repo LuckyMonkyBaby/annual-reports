@@ -12,7 +12,7 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
    const at=performance.now(),transition=start(update);
    transition.ready.then(()=>requestAnimationFrame(()=>{
     const images=[...document.querySelectorAll('#gallery img')].filter(i=>i.closest('.card').getBoundingClientRect().top<innerHeight+200);
-    window.transitionEvidence={readyMs:performance.now()-at,decoded:!!document.querySelector('.selected-card img')?.naturalWidth,undistorted:images.filter(i=>i.complete&&i.naturalWidth).every(i=>{const b=i.getBoundingClientRect();return Math.abs(b.width/b.height-i.naturalWidth/i.naturalHeight)<.01}),durations:document.getAnimations().filter(a=>a.effect?.pseudoElement?.startsWith('::view-transition-group(')).map(a=>a.effect.getTiming().duration),hinged:document.getAnimations().some(a=>a.effect?.pseudoElement?.startsWith('::view-transition-image-pair(')&&a.effect.getKeyframes().some(f=>f.transform?.includes('rotateY(-12deg)')))};
+    window.transitionEvidence={invalid:images.filter(i=>i.complete&&i.naturalWidth).filter(i=>{const b=i.getBoundingClientRect();return Math.abs(b.width/b.height-i.naturalWidth/i.naturalHeight)>=.01}).map(i=>({id:i.closest('.card').dataset.reportId,w:i.getBoundingClientRect().width,h:i.getBoundingClientRect().height,ratio:i.naturalWidth/i.naturalHeight})),readyMs:performance.now()-at,decoded:!!document.querySelector('.selected-card img')?.naturalWidth,undistorted:images.filter(i=>i.complete&&i.naturalWidth).every(i=>{const b=i.getBoundingClientRect();return Math.abs(b.width/b.height-i.naturalWidth/i.naturalHeight)<.01}),durations:document.getAnimations().filter(a=>a.effect?.pseudoElement?.startsWith('::view-transition-group(')).map(a=>a.effect.getTiming().duration),hinged:document.getAnimations().some(a=>a.effect?.pseudoElement?.startsWith('::view-transition-image-pair(')&&a.effect.getKeyframes().some(f=>f.transform?.includes('rotateY(-12deg)')))};
    })).catch(()=>{});
    return transition;
   };
@@ -42,7 +42,7 @@ const baseURL=process.env.REPORTS_BASE_URL||'http://127.0.0.1:8765/';
  assert.equal(await page.locator('#gallery .card').count(),13);
  await page.waitForFunction(()=>window.transitionEvidence?.decoded);
  const motion=await page.evaluate(()=>window.transitionEvidence);
- assert.ok(motion.decoded&&motion.undistorted&&motion.hinged);assert.ok(motion.readyMs<300,`Click snapshot waited ${motion.readyMs}ms for delayed images`);assert.ok(motion.durations.length>0&&motion.durations.every(d=>d===300));
+ assert.ok(motion.decoded&&motion.undistorted&&motion.hinged,JSON.stringify(motion));assert.ok(motion.readyMs<300,`Click snapshot waited ${motion.readyMs}ms for delayed images`);assert.ok(motion.durations.length>0&&motion.durations.every(d=>d===300));
  assert.equal(await page.locator('#pdf-link').isVisible(),true);
  assert.ok(['www.sec.gov','www.annualreports.com'].includes(new URL(await page.locator('#pdf-link').getAttribute('href')).hostname));
  assert.equal(await page.locator('.selected-card').evaluate(e=>getComputedStyle(e).gridRowStart),'span 2');

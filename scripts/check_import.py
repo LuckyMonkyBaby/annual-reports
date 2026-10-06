@@ -36,3 +36,26 @@ with tempfile.TemporaryDirectory() as folder:
             assert 'archive download failed' in str(error)
         assert download.call_count==1
 print('PASS: archive transport errors remain distinguishable from absent documents')
+
+# A PDF viewer clips this fixture to 290x390; MediaBox rendering would be 300x400.
+import import_reports
+from build_gallery import dimensions
+import json
+with tempfile.TemporaryDirectory() as folder:
+    root=Path(folder);(root/'dist/covers').mkdir(parents=True);cache=root/'cache';cache.mkdir()
+    stream=b'0 0 1 rg 0 0 290 390 re f'
+    objects=[b'<< /Type /Catalog /Pages 2 0 R >>',b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /CropBox [0 10 290 400] /Resources << >> /Contents 4 0 R >>',b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream']
+    pdf=b'%PDF-1.4\n';offsets=[0]
+    for i,obj in enumerate(objects,1):
+        offsets.append(len(pdf));pdf+=str(i).encode()+b' 0 obj\n'+obj+b'\nendobj\n'
+    xref=len(pdf);pdf+=b'xref\n0 5\n0000000000 65535 f \n'+b''.join(f'{offset:010d} 00000 n \n'.encode() for offset in offsets[1:])+f'trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF'.encode()
+    def fixture_get(url,path=None):
+        data=pdf if url.endswith('.pdf') else (json.dumps({'stateOfIncorporation':'DE','tickers':['TEST']}).encode() if 'submissions' in url else b'Period of Report</div><div>2024-12-31<a href="cover.pdf">PDF</a>')
+        if path:path.write_bytes(data)
+        return data
+    with patch.object(import_reports,'ROOT',root),patch.object(import_reports,'CACHE',cache),patch.object(import_reports,'get',side_effect=fixture_get):
+        record=import_reports.import_one(('1','Example','ARS','2025-01-01','edgar/data/1/0000000001-25-000001.txt'))
+    width,height=dimensions(root/'dist'/record['cover'])
+    assert height==900 and abs(width-900*290/390)<1,(width,height)
+    assert record['cover'].endswith('-crop.webp')
+print('PASS: real PDF extraction uses visible CropBox and a new immutable asset URL')
