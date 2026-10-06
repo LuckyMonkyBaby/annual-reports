@@ -108,27 +108,34 @@ if (typeof document !== 'undefined') {
     if (shown >= filtered.length) observer.unobserve(sentinel);
   }
   function select(record) {
+    transition?.skipTransition();
+    const source = record && [...$('gallery').children].find(card => card.dataset.reportId === record.id)?.querySelector('img');
+    const from = source?.getBoundingClientRect();
     selected = record && selected?.id !== record.id ? record : null;
     $('search').value = '';
-    const update = () => { render(); window.scrollTo({top: 0, behavior: 'instant'}); };
-    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      transition?.skipTransition();
-      const opening = selected && `cover-${selected.id}`;
-      transition = document.startViewTransition(() => {
-        update();
-      });
-      transition.ready.then(() => {
-        if (!opening) return;
-        document.documentElement.animate([
-          {transform:'perspective(1200px) rotateY(0deg)',filter:'drop-shadow(0 0 0 transparent)',offset:0},
-          {transform:'perspective(1200px) rotateY(-12deg)',filter:'drop-shadow(8px 6px 12px #0002)',offset:.32},
-          {transform:'perspective(1200px) rotateY(1deg)',filter:'drop-shadow(2px 2px 3px #0001)',offset:.8},
-          {transform:'perspective(1200px) rotateY(0deg)',filter:'drop-shadow(0 0 0 transparent)',offset:1}
-        ].map(frame => ({...frame,transformOrigin:'left center'})), {
-          duration:300,easing:'cubic-bezier(.22,1,.36,1)',pseudoElement:`::view-transition-image-pair(${CSS.escape(opening)})`
-        });
-      }).catch(() => {});
-    } else update();
+    const animate = selected && source?.naturalWidth && from.width && from.bottom > 0 && from.top < innerHeight && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const cover = animate ? document.createElement('canvas') : null;
+    if (cover) {
+      cover.width = source.naturalWidth; cover.height = source.naturalHeight;
+      cover.getContext('2d').drawImage(source, 0, 0);
+      cover.className = 'cover-opening'; cover.setAttribute('aria-hidden', 'true');
+      Object.assign(cover.style, {left:`${from.left}px`,top:`${from.top}px`,width:`${from.width}px`,height:`${from.height}px`,viewTransitionName:'none'});
+      document.body.append(cover);
+    }
+    render();
+    window.scrollTo({top:0,behavior:'instant'});
+    if (!cover) return;
+    const target = $('gallery').querySelector('.selected-card img'), to = target.getBoundingClientRect();
+    target.style.visibility = 'hidden';
+    // Animate one decoded cover bitmap instead of snapshotting the full scrolled gallery.
+    const motion = cover.animate([
+      {transform:'translate(0,0) scale(1)'},
+      {transform:`translate(${to.left-from.left}px,${to.top-from.top}px) scale(${to.width/from.width})`}
+    ], {duration:600,easing:'cubic-bezier(.25,.8,.25,1)',fill:'forwards'});
+    const surroundings = $('gallery').animate([{opacity:0},{opacity:1}], {duration:280,delay:120,fill:'backwards'});
+    const cleanup = () => { target.style.removeProperty('visibility'); cover.remove(); motion.cancel(); surroundings.cancel(); };
+    transition = {skipTransition:cleanup};
+    motion.finished.then(cleanup).catch(() => {});
   }
   function makeCard(r, isSelected = false) {
     const existing = reusableCards.get(r.id);

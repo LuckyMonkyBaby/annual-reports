@@ -63,3 +63,5 @@ html[data-view="landing"] .entry-cover{display:flex;position:fixed;inset:0;z-ind
 .paper-crease{fill:none;stroke:var(--faint);stroke-width:.6;stroke-opacity:.25}
 
 .search input::placeholder{color:var(--muted);opacity:1}
+
+.cover-opening{position:fixed;z-index:50;max-width:none;max-height:none;object-fit:contain;transform-origin:top left;pointer-events:none;will-change:transform}
