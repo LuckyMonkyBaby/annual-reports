@@ -107,7 +107,7 @@ if (typeof document !== 'undefined') {
     shown += 48;
     if (shown >= filtered.length) observer.unobserve(sentinel);
   }
-  function select(record) {
+  function select(record, event) {
     transition?.skipTransition();
     const source = record && [...$('gallery').children].find(card => card.dataset.reportId === record.id)?.querySelector('img');
     const from = source?.getBoundingClientRect();
@@ -126,12 +126,17 @@ if (typeof document !== 'undefined') {
     window.scrollTo({top:0,behavior:'instant'});
     if (!cover) return;
     const target = $('gallery').querySelector('.selected-card img'), to = target.getBoundingClientRect();
+    const x = event?.detail ? Math.max(0, Math.min(from.width, event.clientX-from.left)) : from.width/2;
+    const y = event?.detail ? Math.max(0, Math.min(from.height, event.clientY-from.top)) : from.height/2;
+    const scale = to.width/from.width;
+    cover.style.transformOrigin = `${x}px ${y}px`;
     target.style.visibility = 'hidden';
     // Animate one decoded cover bitmap instead of snapshotting the full scrolled gallery.
     const motion = cover.animate([
-      {transform:'translate(0,0) scale(1)'},
-      {transform:`translate(${to.left-from.left}px,${to.top-from.top}px) scale(${to.width/from.width})`}
-    ], {duration:600,easing:'cubic-bezier(.25,.8,.25,1)',fill:'forwards'});
+      {transform:'translate(0,0) scale(1)',offset:0,easing:'cubic-bezier(.2,.6,.3,1)'},
+      {transform:'translate(0,0) scale(1.08)',offset:.22,easing:'cubic-bezier(.25,.8,.25,1)'},
+      {transform:`translate(${to.left-from.left+x*(scale-1)}px,${to.top-from.top+y*(scale-1)}px) scale(${scale})`,offset:1}
+    ], {duration:650,fill:'forwards'});
     const surroundings = $('gallery').animate([{opacity:0},{opacity:1}], {duration:280,delay:120,fill:'backwards'});
     const cleanup = () => { target.style.removeProperty('visibility'); cover.remove(); motion.cancel(); surroundings.cancel(); };
     transition = {skipTransition:cleanup};
@@ -172,11 +177,11 @@ if (typeof document !== 'undefined') {
       action.setAttribute('aria-label', 'Show all reports');
       action.setAttribute('aria-pressed', 'true');
       action.append(stage, caption);
-      action.addEventListener('click', () => select(r));
+      action.addEventListener('click', event => select(r, event));
       inner.append(action);
     } else {
       inner.append(stage, caption);
-      card.addEventListener('click', () => select(r));
+      card.addEventListener('click', event => select(r, event));
     }
     card.append(inner);
     preloader.observe(card);
