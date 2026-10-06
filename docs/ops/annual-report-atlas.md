@@ -28,7 +28,6 @@ Requires Python 3, curl, Poppler (`pdftoppm`, `pdftotext`), WebP (`cwebp`, `dweb
 python3 scripts/import_archive.py --start 2020 --end 2026
 python3 scripts/build_gallery.py
 node scripts/check.mjs
-node scripts/check_alignment.cjs
 python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
 ```
 
@@ -36,7 +35,7 @@ The bulk import resumes through processed-record caches and deduplicates company
 
 ## Verify
 
-`node scripts/check.mjs` checks count, asset/source integrity, reporting dates, membership scope, ticker search and nearest-color behavior. `python3 scripts/check_import.py` checks the plain-form filter with colored and monochrome counterexamples. The dedicated alignment check covers 19 featured/selected resizing scenarios from 320–1600 CSS pixels, including breakpoints and viewport sizes equivalent to browser zoom; it checks row edges, original proportions, caption/toolbar bounds and resetting to the normal gallery. Selected mode has only thirteen cards and disables `content-visibility` skipping so geometry is available before a transition snapshot. The browser check uses the parent workspace's installed Playwright, verifies image decoding, search/empty states, the PDF link, similar-cover navigation, Escape dismissal and mobile overflow, and records the actual UI outside Git. It requires the local server above. New checkouts need Playwright available to run that optional UI check; the product itself has no npm dependencies.
+`node scripts/check.mjs` checks count, asset/source integrity, reporting dates, membership scope, ticker search and nearest-color behavior. `python3 scripts/check_import.py` checks the plain-form filter with colored and monochrome counterexamples, and renders a real PDF fixture to verify CropBox extraction. With the preview server running, use `node scripts/check_alignment.cjs` and `node scripts/browser-check.cjs`. The dedicated alignment check covers 19 featured/selected resizing scenarios from 320–1600 CSS pixels, including breakpoints and viewport sizes equivalent to browser zoom; it checks row edges, original proportions, caption/toolbar bounds and resetting to the normal gallery. Selected mode has only thirteen cards and disables `content-visibility` skipping so geometry is available before a transition snapshot. The browser check uses the parent workspace's installed Playwright, verifies image decoding, search/empty states, the PDF link, similar-cover navigation, Escape dismissal and mobile overflow, and records the actual UI outside Git. It requires the local server above. New checkouts need Playwright available to run that optional UI check; the product itself has no npm dependencies.
 
 The user requested work outside Lobby. The application has an independent GitHub repository at luckymonkybaby/annual-reports on main, separate from the parent coding application's integration checkout. Vercel publishes `dist` with no installation or build step. Covers are precompressed WebP images served through the CDN with immutable cache headers; full PDFs are discarded after processing. Keep full PDFs, demo videos and temporary caches outside Git.
 
